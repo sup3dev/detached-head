@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+_preview/
+tools/_scratch/
+*.log

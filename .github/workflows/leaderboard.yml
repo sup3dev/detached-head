@@ -1,0 +1,117 @@
+name: Speedrun leaderboard
+
+# Speedruns are submitted by opening an issue titled "/run <route>".
+# The route is validated against data/graph.json; accepted runs are committed
+# to LEADERBOARD.md, both outcomes comment on and close the issue.
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: leaderboard-issue-${{ github.event.issue.id }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: ${{ github.workspace }}/src
+    steps:
+      # Runs before checkout: the system python3 is enough to parse the title.
+      # Anything not starting with "/run" (case-insensitive) exits silently.
+      - name: Parse issue title
+        id: parse
+        env:
+          TITLE: ${{ github.event.issue.title }}
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import os
+          title = (os.environ.get("TITLE") or "").strip()
+          if title[:4].lower() == "/run":
+              print("should_run=true")
+              print("route=" + title[4:].strip())
+          else:
+              print("should_run=false")
+          PY
+
+      - name: Checkout
+        if: steps.parse.outputs.should_run == 'true'
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        if: steps.parse.outputs.should_run == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # The route travels through env, never through command interpolation.
+      - name: Validate run and update leaderboard
+        id: validate
+        if: steps.parse.outputs.should_run == 'true'
+        env:
+          PLAYER: ${{ github.event.issue.user.login }}
+          ROUTE: ${{ steps.parse.outputs.route }}
+        run: |
+          set +e
+          python -m detached_head.leaderboard --submit "$PLAYER" "$ROUTE" > result.md 2>&1
+          status=$?
+          set -e
+          {
+            echo "status=$status"
+            if [ "$status" -eq 0 ]; then
+              echo "ok=true"
+              echo "clicks=$(sed -n 's/^Run accepted: \([0-9][0-9]*\) clicks.*/\1/p' result.md | head -n 1)"
+            else
+              echo "ok=false"
+            fi
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Commit updated leaderboard
+        if: steps.validate.outputs.ok == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add LEADERBOARD.md
+          if git diff --cached --quiet; then
+            echo "LEADERBOARD.md unchanged, nothing to commit"
+            exit 0
+          fi
+          git commit -m "leaderboard: @${{ github.event.issue.user.login }} ${{ steps.validate.outputs.clicks }} clicks [skip ci]"
+          git push
+
+      - name: Comment result and close issue
+        if: steps.parse.outputs.should_run == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const ok = '${{ steps.validate.outputs.ok }}' === 'true';
+            let body = fs.readFileSync('result.md', 'utf8').trim();
+            if (!body) {
+              body = ok ? 'Run accepted.' : 'Run rejected.';
+            }
+            const params = {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            };
+            await github.rest.issues.createComment({ ...params, body: body });
+            if (!ok) {
+              try {
+                await github.rest.issues.createLabel({
+                  owner: params.owner,
+                  repo: params.repo,
+                  name: 'invalid-run',
+                  color: 'd1242f',
+                });
+              } catch (e) {
+                // Label already exists.
+              }
+              await github.rest.issues.addLabels({ ...params, labels: ['invalid-run'] });
+            }
+            await github.rest.issues.update({ ...params, state: 'closed' });

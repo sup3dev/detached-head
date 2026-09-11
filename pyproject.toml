@@ -1,0 +1,10 @@
+[project]
+name = "detached-head"
+version = "0.1.0"
+description = "DETACHED HEAD - a first-person shooter compiled into a graph of markdown files. No engine runs at runtime: the links are the engine."
+requires-python = ">=3.12"
+dependencies = ["pillow>=10.0", "numpy>=1.26"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
