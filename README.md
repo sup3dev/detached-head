@@ -33,12 +33,13 @@ is yours. Everyone else gets a dungeon, bugs, a key, a gate and a monster.)*
 
 ## How to play
 
-Every screen is one markdown file. One click = one move.
+Every screen is one markdown file. One click = one move. The letter after
+each emoji is your speedrun token — write them down as you go.
 
 | click | move | | click | move |
 |---|---|---|---|---|
-| ⬆️ | step forward | | ⬅️ / ➡️ | turn left / right |
-| ⬇️ | step back | | 💥 | fire |
+| ⬆️ `F` | step forward | | ⬅️ `L` / ➡️ `R` | turn left / right |
+| ⬇️ `B` | step back | | 💥 `X` | fire (aimed only) |
 
 🐛 Bugs die to one aimed 💥 — put the crosshair on them (they
 regenerate when you leave the wing; it's a legacy codebase).

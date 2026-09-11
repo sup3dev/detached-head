@@ -84,9 +84,13 @@ def win_md(fmt: str = "webp") -> str:
 **THE DEBT** is deleted. The build is green, the tests pass, the way home is
 open. You may go home now.
 
-\U0001f3c6 Think you can escape faster? Submit a speedrun:
-open an issue titled `/run FFRRRF...` with your route \u2014 see
-[LEADERBOARD.md](../LEADERBOARD.md).
+\U0001f3c6 Think you escaped faster? Here is how speedrunning works:
+
+1. Replay from the start, writing down every click:
+   \u2b06\ufe0f=`F` \u00b7 \u2b07\ufe0f=`B` \u00b7 \u2b05\ufe0f=`L` \u00b7 \u27a1\ufe0f=`R` \u00b7 \U0001F4A5=`X`
+2. Open an issue in this repository titled `/run FFRRFX...` (your tokens).
+3. A GitHub Action replays your route and files your time \u2014
+   [LEADERBOARD.md](../LEADERBOARD.md). Shortest known run: **62 clicks**.
 
 [\u2302 index](../README.md)
 """
@@ -114,11 +118,20 @@ def emit_leaderboard(root: Path) -> None:
 LEADERBOARD_MD = """# \U0001f3c1 Speedrun leaderboard
 
 Fastest escape and slaying of **THE DEBT**, measured in clicks.
+Shortest known run: **62 clicks**. Beat it.
 
-Submit a run by opening an issue titled `/run FFRRFX...` where the letters
-are your moves (`F` forward, `B` back, `L`/`R` turn, `X` fire). A GitHub
-Action validates the route against `data/graph.json` and files your time.
-Details: [docs/LEADERBOARD.md](docs/LEADERBOARD.md).
+## How to submit a run
+
+1. Start from [the first screen](game/x20y21N.md) and play to the end.
+2. Write down every click you make, as tokens:
+   \u2b06\ufe0f = `F` (forward) \u00b7 \u2b07\ufe0f = `B` (back) \u00b7 \u2b05\ufe0f = `L` (turn left) \u00b7 \u27a1\ufe0f = `R` (turn right) \u00b7 \U0001F4A5 = `X` (fire)
+   Your run looks like `FFRRRFFXFF...` \u2014 one letter per click, in order.
+3. Open an issue in this repository titled `/run FFRRFX...` with your tokens.
+
+A GitHub Action replays your route over `data/graph.json`, files your time
+below, and closes the issue with your place. Bad routes (walking into walls,
+shooting at nothing, not reaching the end) are rejected with the exact click
+where you lied. One best result per player. Details: [docs/LEADERBOARD.md](docs/LEADERBOARD.md).
 
 <!-- LEADERBOARD:BEGIN -->
 | # | Player | Clicks | Date |
@@ -175,12 +188,13 @@ is yours. Everyone else gets a dungeon, bugs, a key, a gate and a monster.)*
 
 ## How to play
 
-Every screen is one markdown file. One click = one move.
+Every screen is one markdown file. One click = one move. The letter after
+each emoji is your speedrun token \u2014 write them down as you go.
 
 | click | move | | click | move |
 |---|---|---|---|---|
-| \u2b06\ufe0f | step forward | | \u2b05\ufe0f / \u27a1\ufe0f | turn left / right |
-| \u2b07\ufe0f | step back | | \U0001F4A5 | fire |
+| \u2b06\ufe0f `F` | step forward | | \u2b05\ufe0f `L` / \u27a1\ufe0f `R` | turn left / right |
+| \u2b07\ufe0f `B` | step back | | \U0001F4A5 `X` | fire (aimed only) |
 
 \U0001f41b Bugs die to one aimed \U0001F4A5 \u2014 put the crosshair on them (they
 regenerate when you leave the wing; it's a legacy codebase).
