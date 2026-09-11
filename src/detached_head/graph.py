@@ -37,6 +37,16 @@ def shrine_id(cx: int, cy: int, ang: str, hp: int, key: bool) -> str:
     return f"x{cx:02d}y{cy:02d}{ang}w{hp}" + ("k" if key else "")
 
 
+def _in_front(cx: int, cy: int, ang: str, tx: int, ty: int) -> bool:
+    """True if the target cell lies inside the shooter's forward 90-degree
+    cone: the crosshair must actually be on the target to hit it."""
+    fx, fy = DIRS[ang]
+    dx, dy = tx - cx, ty - cy
+    dot = fx * dx + fy * dy
+    cross = fy * dx - fx * dy
+    return dot > 0 and abs(cross) <= dot
+
+
 def build_graph(lvl: Level) -> dict:
     start = normal_id(*lvl.spawn, "N", False)
     nodes: dict[str, dict] = {}
@@ -78,7 +88,9 @@ def build_graph(lvl: Level) -> dict:
         tx, ty = cx + dx, cy + dy
         c = lvl.char(tx, ty)
         if c == "q":
-            return ("shrine", tx, ty, ang, SHRINE_HP[0], key, False)
+            # with the key already taken, the oldest bug stays dead for good
+            entry_hp = 0 if key else SHRINE_HP[0]
+            return ("shrine", tx, ty, ang, entry_hp, key, False)
         if c == "K" or not lvl.passable(tx, ty, key):
             return None
         if lvl.is_arena(tx, ty):
@@ -117,8 +129,13 @@ def build_graph(lvl: Level) -> dict:
                     moves[token] = add_normal(t[1], t[2], t[3], t[4], t[5])
             moves["L"] = add_normal(cx, cy, LEFT[ang], key, imp_dead)
             moves["R"] = add_normal(cx, cy, RIGHT[ang], key, imp_dead)
-            if lvl.imp_zone(cx, cy) and not imp_dead:
-                moves["X"] = add_normal(cx, cy, ang, key, True)  # blaster auto-aim: bug down
+            zone = lvl.imp_zone(cx, cy)
+            if zone and not imp_dead:
+                ix, iy, _ = lvl.imps[zone]
+                if _in_front(cx, cy, ang, ix, iy):
+                    moves["X"] = add_normal(cx, cy, ang, key, True)  # aimed shot: bug down
+                else:
+                    moves["X"] = nid  # the crosshair is not on it
             else:
                 moves["X"] = nid  # dry fire
 
@@ -137,9 +154,13 @@ def build_graph(lvl: Level) -> dict:
                     moves[token] = None
             moves["L"] = add_arena(cx, cy, LEFT[ang], hp)
             moves["R"] = add_arena(cx, cy, RIGHT[ang], hp)
-            moves["X"] = arena_id(cx, cy, ang, hp - 1) if hp > 1 else WIN
-            if hp > 1:
-                add_arena(cx, cy, ang, hp - 1)
+            bx, by = lvl.boss
+            if _in_front(cx, cy, ang, bx, by):
+                moves["X"] = arena_id(cx, cy, ang, hp - 1) if hp > 1 else WIN
+                if hp > 1:
+                    add_arena(cx, cy, ang, hp - 1)
+            else:
+                moves["X"] = nid  # shooting a wall: THE DEBT is not in the cone
 
         elif node["kind"] == "shrine":
             hp = node["hp"]
@@ -165,11 +186,12 @@ def build_graph(lvl: Level) -> dict:
                     moves[token] = None
             moves["L"] = add_shrine(cx, cy, LEFT[ang], hp, key)
             moves["R"] = add_shrine(cx, cy, RIGHT[ang], hp, key)
-            if hp > 0:
+            ax, ay = shrine.anchor
+            if hp > 0 and _in_front(cx, cy, ang, ax, ay):
                 moves["X"] = shrine_id(cx, cy, ang, hp - 1, key)
                 add_shrine(cx, cy, ang, hp - 1, key)
             else:
-                moves["X"] = nid  # nothing left to shoot at
+                moves["X"] = nid  # dry fire (or the oldest bug is already dead)
 
         node["moves"] = moves
         for target in moves.values():
@@ -240,16 +262,24 @@ def validate(graph: dict, lvl: Level) -> list[str]:
     if not key_reachable:
         errors.append("the golden key is never reachable")
 
-    # imp semantics: in a wing with a bug, X kills it exactly once per visit
+    # imp semantics: X kills the wing's bug exactly when the crosshair is on it
     for nid, node in nodes.items():
         if node["kind"] != "normal" or not lvl.imp_zone(*node["cell"]):
             continue
-        zone = lvl.zone(*node["cell"])
+        zone = lvl.imp_zone(*node["cell"])
+        ix, iy, _ = lvl.imps[zone]
+        aimed = _in_front(node["cell"][0], node["cell"][1], node["angle"], ix, iy)
         x_target = node["moves"]["X"]
         if node["imp_dead"]:
             if x_target != nid:
                 errors.append(f"{nid}: shooting a dead bug must be a dry fire")
-        else:
-            if x_target is None or not x_target.endswith("d"):
-                errors.append(f"{nid}: X in {zone} with a live bug must kill it")
+        elif aimed and x_target != normal_id(*node["cell"], node["angle"], bool(node["key"]), True):
+            errors.append(f"{nid}: aimed X must kill the {zone} bug")
+        elif not aimed and x_target != nid:
+            errors.append(f"{nid}: unaimed X must be a dry fire")
+
+    # with the key taken, the oldest bug stays dead: no hp>0 shrine node carries the key
+    for nid, node in nodes.items():
+        if node["kind"] == "shrine" and node["key"] and node["hp"] > 0:
+            errors.append(f"{nid}: the oldest bug resurrected under a key holder")
     return errors

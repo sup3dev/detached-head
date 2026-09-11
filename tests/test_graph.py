@@ -36,12 +36,17 @@ def test_five_killable_bugs(graph, lvl):
     assert {z for z in lvl.imps} == {"main", "feature", "hotfix", "docs", "refactor"}
 
 
-def test_bug_dies_to_one_shot(graph, lvl):
-    node = graph["nodes"][normal_id(16, 23, "N", False)]  # hub, main zone
+def test_bug_dies_to_one_aimed_shot(graph, lvl):
+    node = graph["nodes"][normal_id(16, 22, "S", False)]  # facing the hub bug at (16,23)
     assert node["imp_dead"] == 0
-    assert node["moves"]["X"] == normal_id(16, 23, "N", False, True)
-    dead = graph["nodes"][normal_id(16, 23, "N", False, True)]
-    assert dead["moves"]["X"] == normal_id(16, 23, "N", False, True)  # dry fire on a corpse
+    assert node["moves"]["X"] == normal_id(16, 22, "S", False, True)
+    dead = graph["nodes"][normal_id(16, 22, "S", False, True)]
+    assert dead["moves"]["X"] == normal_id(16, 22, "S", False, True)  # dry fire on a corpse
+
+
+def test_unaimed_shot_is_dry_fire(graph, lvl):
+    facing_away = graph["nodes"][normal_id(16, 22, "N", False)]  # bug behind the player
+    assert facing_away["moves"]["X"] == normal_id(16, 22, "N", False)
 
 
 def test_bug_regenerates_on_zone_return(graph, lvl):
@@ -94,10 +99,13 @@ def test_fleeing_shrine_resets_oldest_bug(graph, lvl):
     assert back_in == shrine_id(5, 12, "W", 3, False), "the oldest bug must return at full strength"
 
 
-def test_shrine_exit_keeps_key(graph, lvl):
-    inside = shrine_id(5, 12, "W", 3, True)
-    assert inside in graph["nodes"]
-    leave = graph["nodes"][shrine_id(5, 12, "E", 3, True)]["moves"]["F"]
+def test_oldest_bug_stays_dead_under_key_holder(graph, lvl):
+    # once you hold the key, re-entering the shrine finds no resurrected bug
+    enter = graph["nodes"][normal_id(6, 12, "W", True)]["moves"]["F"]
+    assert enter == shrine_id(5, 12, "W", 0, True)
+    cleared = graph["nodes"][enter]
+    assert cleared["moves"]["X"] == enter  # nothing left to shoot
+    leave = graph["nodes"][shrine_id(5, 12, "E", 0, True)]["moves"]["F"]
     assert leave == normal_id(6, 12, "E", True)
 
 

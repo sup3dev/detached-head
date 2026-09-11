@@ -40,9 +40,10 @@ Every screen is one markdown file. One click = one move.
 | ⬆️ | step forward | | ⬅️ / ➡️ | turn left / right |
 | ⬇️ | step back | | 💥 | fire |
 
-🐛 Bugs die to one 💥 anywhere in their wing (the blaster auto-aims) —
-but they regenerate the moment you leave. It's a legacy codebase.
-🔑 The key picks itself up once the OLDEST BUG is down.
+🐛 Bugs die to one aimed 💥 — put the crosshair on them (they
+regenerate when you leave the wing; it's a legacy codebase).
+🔑 The key picks itself up once the OLDEST BUG is down — and with the
+key in hand, the oldest bug stays dead for good.
 🚫 ⛔️ means a wall, a locked gate, or the oldest bug still standing his ground.
 
 **This is turn-based by nature.** Every click is a page load on github.com —
@@ -56,7 +57,7 @@ not like Quake. (There is also no sound. The repo is very quiet.)
 
 ## How this works (no, there is no engine)
 
-- The whole game is **7345 markdown files** hyperlinked into a stateless graph: one file per (position × facing × world state).
+- The whole game is **7249 markdown files** hyperlinked into a stateless graph: one file per (position × facing × world state).
 - Walls are **missing links**. The boss has health because its HP lives only inside the arena sub-graph — that trick is why this game can do things a "Doom in a README" cannot.
 - Frames are raycast-rendered by a ~100%-numpy Wolfenstein-style renderer, with procedurally generated textures, sprites, HUD and minimap. Zero external assets.
 - Speedruns: open an issue `/run FFRRX...` and a GitHub Action replays your route over `data/graph.json`. See [LEADERBOARD.md](LEADERBOARD.md).

@@ -182,9 +182,10 @@ Every screen is one markdown file. One click = one move.
 | \u2b06\ufe0f | step forward | | \u2b05\ufe0f / \u27a1\ufe0f | turn left / right |
 | \u2b07\ufe0f | step back | | \U0001F4A5 | fire |
 
-\U0001f41b Bugs die to one \U0001F4A5 anywhere in their wing (the blaster auto-aims) \u2014
-but they regenerate the moment you leave. It's a legacy codebase.
-\U0001f511 The key picks itself up once the OLDEST BUG is down.
+\U0001f41b Bugs die to one aimed \U0001F4A5 \u2014 put the crosshair on them (they
+regenerate when you leave the wing; it's a legacy codebase).
+\U0001f511 The key picks itself up once the OLDEST BUG is down \u2014 and with the
+key in hand, the oldest bug stays dead for good.
 \U0001f6ab \u26d4\ufe0f means a wall, a locked gate, or the oldest bug still standing his ground.
 
 **This is turn-based by nature.** Every click is a page load on github.com \u2014
