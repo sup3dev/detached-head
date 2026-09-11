@@ -84,13 +84,10 @@ def win_md(fmt: str = "webp") -> str:
 **THE DEBT** is deleted. The build is green, the tests pass, the way home is
 open. You may go home now.
 
-\U0001f3c6 Think you escaped faster? Here is how speedrunning works:
-
-1. Replay from the start, writing down every click:
-   \u2b06\ufe0f=`F` \u00b7 \u2b07\ufe0f=`B` \u00b7 \u2b05\ufe0f=`L` \u00b7 \u27a1\ufe0f=`R` \u00b7 \U0001F4A5=`X`
-2. Open an issue in this repository titled `/run FFRRFX...` (your tokens).
-3. A GitHub Action replays your route and files your time \u2014
-   [LEADERBOARD.md](../LEADERBOARD.md). Shortest known run: **62 clicks**.
+\U0001f3c6 Think a shorter escape exists? Write it down like chess moves
+(\u2b06\ufe0f`F` \u2b07\ufe0f`B` \u2b05\ufe0f`L` \u27a1\ufe0f`R` \U0001F4A5`X`) and open an issue titled `/run FFRRFX...`.
+The route to beat: **62 clicks** \u2014 [LEADERBOARD.md](../LEADERBOARD.md).
+Solvers welcome: `data/graph.json` is public, code is legal.
 
 [\u2302 index](../README.md)
 """
@@ -115,23 +112,26 @@ def emit_leaderboard(root: Path) -> None:
     root.joinpath("LEADERBOARD.md").write_text(LEADERBOARD_MD, encoding="utf-8", newline="\n")
 
 
-LEADERBOARD_MD = """# \U0001f3c1 Speedrun leaderboard
+LEADERBOARD_MD = """# \U0001f3c1 Shortest-route leaderboard
 
-Fastest escape and slaying of **THE DEBT**, measured in clicks.
-Shortest known run: **62 clicks**. Beat it.
+The escape, measured in **clicks**. Route to beat: **62 clicks**
+(7 aimed shots: THE OLDEST BUG \u00d73, THE DEBT \u00d74).
 
-## How to submit a run
+## How to compete
 
-1. Start from [the first screen](game/x20y21N.md) and play to the end.
-2. Write down every click you make, as tokens:
-   \u2b06\ufe0f = `F` (forward) \u00b7 \u2b07\ufe0f = `B` (back) \u00b7 \u2b05\ufe0f = `L` (turn left) \u00b7 \u27a1\ufe0f = `R` (turn right) \u00b7 \U0001F4A5 = `X` (fire)
-   Your run looks like `FFRRRFFXFF...` \u2014 one letter per click, in order.
-3. Open an issue in this repository titled `/run FFRRFX...` with your tokens.
+No recordings, no timers \u2014 this game has no JavaScript, so nothing can be
+tracked. You submit a **route**, like a list of chess moves:
 
-A GitHub Action replays your route over `data/graph.json`, files your time
-below, and closes the issue with your place. Bad routes (walking into walls,
-shooting at nothing, not reaching the end) are rejected with the exact click
-where you lied. One best result per player. Details: [docs/LEADERBOARD.md](docs/LEADERBOARD.md).
+1. Plan your escape on the map in the README and write it as tokens, one
+   letter per click: \u2b06\ufe0f `F` forward \u00b7 \u2b07\ufe0f `B` back \u00b7 \u2b05\ufe0f `L` turn left \u00b7 \u27a1\ufe0f `R` turn right \u00b7 \U0001F4A5 `X` fire.
+   A route looks like `FFRRRFFXFF...`.
+2. Open an issue titled `/run FFRRFX...` with your route.
+3. A GitHub Action replays it over `data/graph.json`. Broken routes are
+   rejected naming the exact click where they die \u2014 fix and resubmit.
+
+`graph.json` is public and **writing a solver is legal** \u2014 the first to beat
+62 will probably do it with code. That is not cheating; that is the sport.
+One best result per player.
 
 <!-- LEADERBOARD:BEGIN -->
 | # | Player | Clicks | Date |
@@ -216,7 +216,10 @@ not like Quake. (There is also no sound. The repo is very quiet.)
 - The whole game is **{len(graph["nodes"])} markdown files** hyperlinked into a stateless graph: one file per (position \u00d7 facing \u00d7 world state).
 - Walls are **missing links**. The boss has health because its HP lives only inside the arena sub-graph \u2014 that trick is why this game can do things a "Doom in a README" cannot.
 - Frames are raycast-rendered by a ~100%-numpy Wolfenstein-style renderer, with procedurally generated textures, sprites, HUD and minimap. Zero external assets.
-- Speedruns: open an issue `/run FFRRX...` and a GitHub Action replays your route over `data/graph.json`. See [LEADERBOARD.md](LEADERBOARD.md).
+- The contest is **shortest route, not reflexes**: nothing can be tracked in a
+  game with no JavaScript, so you submit a route like a list of chess moves —
+  open an issue `/run FFRRX...` and a GitHub Action replays it over
+  `data/graph.json`. Solvers are legal. [LEADERBOARD.md](LEADERBOARD.md)
 
 Design math and pipeline internals: [docs/DESIGN.md](docs/DESIGN.md) \u00b7
 speedrun guide: [docs/LEADERBOARD.md](docs/LEADERBOARD.md)

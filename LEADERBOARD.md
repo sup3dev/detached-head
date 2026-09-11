@@ -1,23 +1,25 @@
-# 🏁 Speedrun leaderboard
+# 🏁 Shortest-route leaderboard
 
-Fastest escape and slaying of **THE DEBT**, measured in clicks.
-Shortest known run: **62 clicks**. Beat it.
+The escape, measured in **clicks**. Route to beat: **62 clicks**
+(7 aimed shots: THE OLDEST BUG ×3, THE DEBT ×4).
 
-## How to submit a run
+## How to compete
 
-1. Start from [the first screen](game/x20y21N.md) and play to the end.
-2. Write down every click you make, as tokens:
-   ⬆️ = `F` (forward) · ⬇️ = `B` (back) · ⬅️ = `L` (turn left) · ➡️ = `R` (turn right) · 💥 = `X` (fire)
-   Your run looks like `FFRRRFFXFF...` — one letter per click, in order.
-3. Open an issue in this repository titled `/run FFRRFX...` with your tokens.
+No recordings, no timers — this game has no JavaScript, so nothing can be
+tracked. You submit a **route**, like a list of chess moves:
 
-A GitHub Action replays your route over `data/graph.json`, files your time
-below, and closes the issue with your place. Bad routes (walking into walls,
-shooting at nothing, not reaching the end) are rejected with the exact click
-where you lied. One best result per player. Details: [docs/LEADERBOARD.md](docs/LEADERBOARD.md).
+1. Plan your escape on the map in the README and write it as tokens, one
+   letter per click: ⬆️ `F` forward · ⬇️ `B` back · ⬅️ `L` turn left · ➡️ `R` turn right · 💥 `X` fire.
+   A route looks like `FFRRRFFXFF...`.
+2. Open an issue titled `/run FFRRFX...` with your route.
+3. A GitHub Action replays it over `data/graph.json`. Broken routes are
+   rejected naming the exact click where they die — fix and resubmit.
+
+`graph.json` is public and **writing a solver is legal** — the first to beat
+62 will probably do it with code. That is not cheating; that is the sport.
+One best result per player.
 
 <!-- LEADERBOARD:BEGIN -->
 | # | Player | Clicks | Date |
-|---|---|---|---|
-| 1 | sup3dev | 62 | 2026-09-11 |
+|---|--------|--------|------|
 <!-- LEADERBOARD:END -->

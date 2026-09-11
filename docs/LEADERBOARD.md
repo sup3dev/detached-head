@@ -1,8 +1,9 @@
-# Speedrun guide
+# Shortest-route guide
 
-The leaderboard ranks runs by **clicks**, not seconds: a GitHub Action cannot
-time you, but it can replay your exact route over `data/graph.json`.
-For a turn-based game this is the honest clock.
+The leaderboard ranks **routes by clicks**, not seconds. This game has no
+JavaScript and no state, so nothing about a playthrough can be recorded —
+instead, the contest is the artifact itself: you submit a route, like a list
+of chess moves, and the repository replays it.
 
 ## Tokens
 
@@ -18,17 +19,23 @@ Every click is one token:
 
 ## Submitting
 
-1. Play from the first screen to `YOU ESCAPED`, writing down one token per click.
-2. Open an issue titled `/run FFRRFX...` (case-insensitive, spaces/commas ignored).
-3. The Action ([.github/workflows/leaderboard.yml](../.github/workflows/leaderboard.yml)):
-   - tokenizes the route and replays it from the start node;
-   - rejects it if any move hits a wall, fires at nothing, or never reaches WIN
-     (the error names the exact 0-based click where the route broke);
-   - writes your time into the markers in [LEADERBOARD.md](../LEADERBOARD.md),
-     keeping only each player's best run, and closes the issue with your place.
+1. Plan a route from the first screen to `YOU ESCAPED` (the README has the
+   full map) and write it as tokens, e.g. `FFRRRFFXFF...`.
+2. Open an issue titled `/run FFRRFX...` (case-insensitive, spaces/commas
+   ignored).
+3. The Action ([.github/workflows/leaderboard.yml](../.github/workflows/leaderboard.yml))
+   replays the route from the start node, rejects any move that hits a wall,
+   fires at nothing or never reaches WIN (naming the exact 0-based click
+   where the route broke), then writes your time into the markers of
+   [LEADERBOARD.md](../LEADERBOARD.md) — best result per player — and closes
+   the issue with your place.
 
-Spam guards: routes over 10,000 tokens are rejected outright; one best result
-per player; issues are closed after processing.
+## Solvers are legal
+
+`data/graph.json` is the whole game state machine, public. BFS it, Dijkstra
+it, throw simulated annealing at it — the first person to beat the current
+best (62 clicks) will almost certainly do it with code, and that is the
+sport, not cheating. Pull requests with a `tools/solve.py` are welcome.
 
 ## Testing locally
 
@@ -37,5 +44,5 @@ PYTHONPATH=src python -m detached_head.leaderboard "FFRRFX..."   # validate a ro
 PYTHONPATH=src python -m detached_head.leaderboard --submit YOU "FFRRFX..."  # + write LEADERBOARD.md
 ```
 
-Shortest known run: **62 clicks** (7 aimed shots: 3 for THE OLDEST BUG,
-4 for THE DEBT).
+Spam guards: routes over 10,000 tokens are rejected; one best result per
+player; issues are closed after processing.

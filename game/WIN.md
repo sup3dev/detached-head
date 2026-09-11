@@ -8,12 +8,9 @@
 **THE DEBT** is deleted. The build is green, the tests pass, the way home is
 open. You may go home now.
 
-🏆 Think you escaped faster? Here is how speedrunning works:
-
-1. Replay from the start, writing down every click:
-   ⬆️=`F` · ⬇️=`B` · ⬅️=`L` · ➡️=`R` · 💥=`X`
-2. Open an issue in this repository titled `/run FFRRFX...` (your tokens).
-3. A GitHub Action replays your route and files your time —
-   [LEADERBOARD.md](../LEADERBOARD.md). Shortest known run: **62 clicks**.
+🏆 Think a shorter escape exists? Write it down like chess moves
+(⬆️`F` ⬇️`B` ⬅️`L` ➡️`R` 💥`X`) and open an issue titled `/run FFRRFX...`.
+The route to beat: **62 clicks** — [LEADERBOARD.md](../LEADERBOARD.md).
+Solvers welcome: `data/graph.json` is public, code is legal.
 
 [⌂ index](../README.md)

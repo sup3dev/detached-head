@@ -61,7 +61,10 @@ not like Quake. (There is also no sound. The repo is very quiet.)
 - The whole game is **7249 markdown files** hyperlinked into a stateless graph: one file per (position × facing × world state).
 - Walls are **missing links**. The boss has health because its HP lives only inside the arena sub-graph — that trick is why this game can do things a "Doom in a README" cannot.
 - Frames are raycast-rendered by a ~100%-numpy Wolfenstein-style renderer, with procedurally generated textures, sprites, HUD and minimap. Zero external assets.
-- Speedruns: open an issue `/run FFRRX...` and a GitHub Action replays your route over `data/graph.json`. See [LEADERBOARD.md](LEADERBOARD.md).
+- The contest is **shortest route, not reflexes**: nothing can be tracked in a
+  game with no JavaScript, so you submit a route like a list of chess moves —
+  open an issue `/run FFRRX...` and a GitHub Action replays it over
+  `data/graph.json`. Solvers are legal. [LEADERBOARD.md](LEADERBOARD.md)
 
 Design math and pipeline internals: [docs/DESIGN.md](docs/DESIGN.md) ·
 speedrun guide: [docs/LEADERBOARD.md](docs/LEADERBOARD.md)
