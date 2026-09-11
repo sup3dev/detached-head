@@ -29,7 +29,8 @@ prize-collecting, not plain BFS. No solver shipped; that's the category.
 
 <!-- LEADERBOARD:bugs:BEGIN -->
 | # | Player | Clicks | Date |
-|---|--------|--------|------|
+|---|---|---|---|
+| 1 | sup3dev | 107 | 2026-09-11 |
 <!-- LEADERBOARD:bugs:END -->
 
 ## scenic% — the long way home (most clicks, cap 666)
