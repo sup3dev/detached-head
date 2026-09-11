@@ -24,8 +24,17 @@ ANGLE = {"N": -math.pi / 2, "E": 0.0, "S": math.pi / 2, "W": math.pi}
 
 # scale = sprite height as a fraction of wall height; vshift anchors sprites
 # on the floor: vshift = 0.5 - scale/2 puts the sprite bottom on the floor line
-SPRITE_SCALE = {"key": 0.5, "boss": 1.75, "boss3": 1.75, "boss2": 1.75, "boss1": 1.75}
-SPRITE_VSHIFT = {"key": 0.12, "boss": 0.5 - 1.75 / 2, "boss3": 0.5 - 1.75 / 2, "boss2": 0.5 - 1.75 / 2, "boss1": 0.5 - 1.75 / 2}
+SPRITE_SCALE = {
+    "key": 0.5, "trophy": 0.62,
+    "warden2": 1.05, "warden1": 1.05,
+    "boss": 1.75, "boss3": 1.75, "boss2": 1.75, "boss1": 1.75,
+}
+SPRITE_VSHIFT = {
+    "key": 0.12,
+    "trophy": 0.5 - 0.62 / 2,
+    "warden2": 0.5 - 1.05 / 2, "warden1": 0.5 - 1.05 / 2,
+    "boss": 0.5 - 1.75 / 2, "boss3": 0.5 - 1.75 / 2, "boss2": 0.5 - 1.75 / 2, "boss1": 0.5 - 1.75 / 2,
+}
 
 
 def _bug_scale(kind: str) -> tuple[float, float]:
@@ -122,8 +131,8 @@ class Renderer:
         ang: str,
         *,
         key: bool,
-        hp: int | None = None,
         sprites: list[tuple[int, int, str]] | None = None,
+        bar: tuple[str, int, int] | None = None,
     ) -> Image.Image:
         px, py = cx + 0.5, cy + 0.5
         perp, side, texcol, rdx, rdy = self._cast(px, py, ang, key)
@@ -201,12 +210,12 @@ class Renderer:
         frame = Image.fromarray(np.clip(img, 0, 255).astype(np.uint8), "RGB").resize(
             (RW * SCALE, RH * SCALE), Image.NEAREST
         )
-        self._hud(frame, cx, cy, ang, key, hp)
+        self._hud(frame, cx, cy, ang, key, bar)
         return frame
 
     # ------------------------------------------------------------ HUD
 
-    def _hud(self, frame: Image.Image, cx: int, cy: int, ang: str, key: bool, hp: int | None) -> None:
+    def _hud(self, frame: Image.Image, cx: int, cy: int, ang: str, key: bool, bar: tuple[str, int, int] | None) -> None:
         d = ImageDraw.Draw(frame)
         W, H = frame.size
         lvl = self.lvl
@@ -225,51 +234,57 @@ class Renderer:
             for x in range(lvl.width):
                 if not lvl.is_floor(x, y):
                     continue
-                color = tint.get(lvl.zone(x, y), (27, 33, 41, 255))
+                if lvl.shrine_at(x, y) is not None:
+                    color = (44, 30, 64, 255)
+                else:
+                    color = tint.get(lvl.zone(x, y), (27, 33, 41, 255))
                 if lvl.char(x, y) == "G":
                     color = (63, 185, 80, 255) if key else (248, 81, 73, 255)
                 md.rectangle([x * cell, y * cell, x * cell + cell - 1, y * cell + cell - 1], fill=color)
         kx, ky = lvl.key
         if not key:
             md.rectangle([kx * cell + 1, ky * cell + 1, kx * cell + cell - 2, ky * cell + cell - 2], fill=art.AMBER)
+        bx, by = lvl.boss
+        md.rectangle([bx * cell, by * cell, bx * cell + cell - 1, by * cell + cell - 1], fill=art.RED)
+        for cellxy, shrine in lvl.shrines.items():  # shrine anchors
+            sx, sy = shrine.anchor
+            color = art.AMBER if shrine.kind == "key" else (163, 113, 247)
+            md.rectangle([sx * cell, sy * cell, sx * cell + cell - 1, sy * cell + cell - 1], fill=color)
         for sx, sy, kind in lvl.sprites:
-            if kind == "boss":
-                md.rectangle([sx * cell, sy * cell, sx * cell + cell - 1, sy * cell + cell - 1], fill=art.RED)
-            elif kind == "key":
-                pass
-            else:
-                md.point((sx * cell + cell // 2, sy * cell + cell // 2), fill=(200, 80, 70))
-        # player: view cone + arrow (the cone makes the facing obvious)
+            if not kind.startswith("bug"):
+                continue
+            md.point((sx * cell + cell // 2, sy * cell + cell // 2), fill=(200, 80, 70))
+        # player: view cone + arrow pointing where the player looks
         ddx_, ddy_ = DIRS[ang]
+        px_, py_ = -ddy_, ddx_  # perpendicular
         cxs, cys = cx * cell + cell // 2, cy * cell + cell // 2
-        perp_ = (-ddy_, ddx_)
         reach = cell * 5
         cone = [
-            (cxs + ddx_ * reach + (perp_[0] + ddx_) * cell, cys + ddy_ * reach + (perp_[1] + ddy_) * cell),
+            (cxs + ddx_ * reach + (px_ + ddx_) * cell, cys + ddy_ * reach + (py_ + ddy_) * cell),
             (cxs + ddx_ * (reach + cell), cys + ddy_ * (reach + cell)),
-            (cxs + ddx_ * reach + (-perp_[0] + ddx_) * cell, cys + ddy_ * reach + (-perp_[1] + ddy_) * cell),
+            (cxs + ddx_ * reach + (-px_ + ddx_) * cell, cys + ddy_ * reach + (-py_ + ddy_) * cell),
         ]
         md.polygon([(cxs, cys), *cone], fill=(63, 185, 80, 70))
         md.polygon(
-            [(cxs + ddx_ * 6 - ddy_ * 3, cys + ddy_ * 6 - ddx_ * 3),
-             (cxs + ddx_ * 6 + ddy_ * 3, cys + ddy_ * 6 + ddx_ * 3),
-             (cxs - ddx_ * 3, cys - ddy_ * 3)],
+            [(cxs + ddx_ * 7, cys + ddy_ * 7),          # tip: forward, into the view cone
+             (cxs - ddx_ * 3 + px_ * 3, cys - ddy_ * 3 + py_ * 3),
+             (cxs - ddx_ * 3 - px_ * 3, cys - ddy_ * 3 - py_ * 3)],
             fill=(63, 185, 80),
         )
         mx, my = 16, H - mh - 16
         frame.paste(mimg, (mx, my))
         d.rectangle([mx - 1, my - 1, mx + mw, my + mh], outline=(48, 54, 61))
 
-        # the git blame cannon, bottom center
+        # the gun: plain pixel blaster, dead center, iron sight instead of text
         gun = Image.new("RGBA", (72, 30), (0, 0, 0, 0))
         gd = ImageDraw.Draw(gun)
-        gd.rectangle([14, 4, 66, 22], fill=(58, 66, 77), outline=(88, 99, 112))  # body
-        gd.rectangle([40, 8, 71, 13], fill=(44, 51, 60))  # barrel
-        gd.rectangle([18, 17, 34, 29], fill=(48, 55, 65))  # grip
-        gd.rectangle([46, 6, 51, 8], fill=art.GREEN)  # LED
-        gd.text((22, 10), "blame", font=art._font(10, bold=True), fill=(140, 220, 150))
+        gd.rectangle([14, 4, 66, 22], fill=(58, 66, 77), outline=(88, 99, 112))
+        gd.rectangle([40, 8, 71, 13], fill=(44, 51, 60))
+        gd.rectangle([18, 17, 34, 29], fill=(48, 55, 65))
+        gd.rectangle([46, 6, 51, 8], fill=art.GREEN)
+        gd.rectangle([52, 2, 56, 5], fill=(120, 130, 142))  # iron sight
         gun_big = gun.resize((72 * 6, 30 * 6), Image.NEAREST)
-        frame.paste(gun_big, (W // 2 - 60, H - 30 * 6 + 12), gun_big)
+        frame.paste(gun_big, ((W - 72 * 6) // 2, H - 30 * 6 + 12), gun_big)
 
         # key slot, bottom-right
         box_w = 210
@@ -282,15 +297,15 @@ class Renderer:
         else:
             d.text((W - box_w + 12, H - 44), "no key", font=self.font_hud, fill=(90, 98, 106))
 
-        # boss bar, arena frames only
-        if hp is not None:
+        # enemy bar (arena boss / shrine warden)
+        if bar is not None:
+            label, hp, hp_max = bar
             bw, bh = 460, 44
             bx, by = (W - bw) // 2, 14
             d.rounded_rectangle([bx, by, bx + bw, by + bh], 8, fill=(13, 17, 23, 235), outline=art.RED)
-            d.text((W // 2, by + 12), "THE DEBT", font=self.font_bar, fill=art.RED, anchor="ma")
-            seg_w = (bw - 40 - 9 * 3) // 4
-            for i in range(4):
+            d.text((W // 2, by + 12), label, font=self.font_bar, fill=art.RED, anchor="ma")
+            seg_w = (bw - 40 - (hp_max - 1) * 3) // hp_max
+            for i in range(hp_max):
                 sx0 = bx + 20 + i * (seg_w + 3)
-                filled = i < hp
                 d.rectangle([sx0, by + 30, sx0 + seg_w, by + 38],
-                            fill=art.RED if filled else (60, 28, 26))
+                            fill=art.RED if i < hp else (60, 28, 26))

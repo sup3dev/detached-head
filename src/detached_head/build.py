@@ -23,13 +23,22 @@ def _init_worker(map_path: str) -> None:
 
 
 def _render_job(job: tuple) -> str:
-    nid, cx, cy, ang, key, hp, out_path, fmt = job
+    nid, cx, cy, ang, key, hp, kind, out_path, fmt = job
     lvl = _R.lvl
     sprites = visible_sprites(lvl, bool(key))
-    if hp is not None:
-        sprites = [s for s in sprites if s[2] != "key"]
-        sprites.append((*lvl.boss, "boss" if hp == 4 else f"boss{hp}"))
-    img = _R.frame(cx, cy, ang, key=bool(key), hp=hp, sprites=sprites)
+    bar = None
+    if kind == "arena":
+        sprites = [(*lvl.boss, "boss" if hp == 4 else f"boss{hp}")]
+        bar = ("THE DEBT", hp, 4)
+    elif kind == "shrine":
+        shrine = lvl.shrine_at(cx, cy)
+        ax, ay = shrine.anchor
+        if hp > 0:
+            sprites.append((ax, ay, "warden2" if hp == 2 else "warden1"))
+            bar = ("THE WARDEN", hp, 2)
+        else:
+            sprites.append((ax, ay, "key" if shrine.kind == "key" else "trophy"))
+    img = _R.frame(cx, cy, ang, key=bool(key), sprites=sprites, bar=bar)
     if fmt == "webp":
         img.save(out_path, "WEBP", quality=82, method=4)
     else:
@@ -69,7 +78,7 @@ def main(argv: list[str] | None = None) -> int:
     art.make_minimap_banner(lvl).save(assets / f"map.{fmt}", "WEBP" if fmt == "webp" else None, quality=88, method=4)
 
     todo = [
-        (nid, n["cell"][0], n["cell"][1], n["angle"], n["key"], n["hp"],
+        (nid, n["cell"][0], n["cell"][1], n["angle"], n["key"], n["hp"], n["kind"],
          assets / f"{nid}.{fmt}", fmt)
         for nid, n in graph["nodes"].items()
         if n["kind"] != "win"

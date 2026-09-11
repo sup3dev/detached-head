@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from detached_head import emit
-from detached_head.graph import WIN, arena_id, build_graph, normal_id, validate
+from detached_head.graph import WIN, arena_id, build_graph, normal_id, shrine_id, validate
 from detached_head.level import load
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -28,25 +28,73 @@ def test_graph_invariants(graph, lvl):
 
 
 def test_budget(graph):
-    assert 3000 <= len(graph["nodes"]) <= 6000, f"node count {len(graph['nodes'])} outside budget"
+    assert 3000 <= len(graph["nodes"]) <= 7000, f"node count {len(graph['nodes'])} outside budget"
+
+
+def test_three_shrines(graph, lvl):
+    names = {s.name for s in lvl.shrines.values()}
+    assert len(names) == 3
+    assert any(s.kind == "key" for s in lvl.shrines.values())
+    assert sum(1 for s in {id(s): s for s in lvl.shrines.values()}.values() if s.kind == "trophy") == 2
 
 
 def test_gate_is_solid_without_key(graph, lvl):
     gx, gy = lvl.gate
     below = normal_id(gx, gy + 1, "N", False)
     assert below in graph["nodes"]
-    assert graph["nodes"][below]["moves"]["F"] is None, "keyless player walks through the merge gate"
+    assert graph["nodes"][below]["moves"]["F"] is None, "keyless player walks through the gate"
     assert all(
         n["key"] == 1 for n in graph["nodes"].values()
         if n["kind"] == "normal" and n["cell"] == [gx, gy]
     )
 
 
-def test_key_pickup_on_step(graph, lvl):
-    kx, ky = lvl.key
-    east = normal_id(kx + 1, ky, "W", False)
-    assert east in graph["nodes"]
-    assert graph["nodes"][east]["moves"]["F"] == normal_id(kx, ky, "W", True)
+def test_shrine_entry_spawns_full_warden(graph, lvl):
+    # stepping from the key shrine's doorway west onto shrine floor
+    door = normal_id(6, 12, "W", False)
+    assert door in graph["nodes"]
+    assert graph["nodes"][door]["moves"]["F"] == shrine_id(5, 12, "W", 2, False)
+
+
+def test_warden_guards_the_key(graph, lvl):
+    # inside the shrine with the warden standing, forward onto the key is a wall
+    guard = shrine_id(5, 12, "W", 2, False)
+    assert graph["nodes"][guard]["moves"]["F"] is None
+
+
+def test_warden_fall_opens_the_key(graph, lvl):
+    hp1 = graph["nodes"][shrine_id(5, 12, "W", 2, False)]["moves"]["X"]
+    assert hp1 == shrine_id(5, 12, "W", 1, False)
+    cleared = graph["nodes"][hp1]["moves"]["X"]
+    assert cleared == shrine_id(5, 12, "W", 0, False)
+    assert graph["nodes"][cleared]["moves"]["F"] == normal_id(4, 12, "W", True)  # the pickup
+
+
+def test_fleeing_shrine_resets_warden(graph, lvl):
+    # leave the shrine from the entry cell facing back east, then re-enter
+    entry = shrine_id(5, 12, "E", 1, False)  # hurt warden, facing the door
+    outside = graph["nodes"][entry]["moves"]["F"]
+    assert outside == normal_id(6, 12, "E", False)
+    back_in = graph["nodes"][normal_id(6, 12, "W", False)]["moves"]["F"]
+    assert back_in == shrine_id(5, 12, "W", 2, False), "warden must return at full strength"
+
+
+def test_trophy_shrine_flow(graph, lvl):
+    # hotfix shrine: door (33,13) east onto (34,13), trophy at (35,13)
+    enter = graph["nodes"][normal_id(33, 13, "E", False)]["moves"]["F"]
+    assert enter == shrine_id(34, 13, "E", 2, False)
+    guarded = graph["nodes"][shrine_id(34, 13, "E", 2, False)]["moves"]["F"]
+    assert guarded is None
+    cleared = graph["nodes"][shrine_id(34, 13, "E", 0, False)]["moves"]["F"]
+    assert cleared == shrine_id(35, 13, "E", 0, False)  # stand on the trophy
+
+
+def test_shrine_exit_keeps_key(graph, lvl):
+    # re-enter the cleared key shrine holding the key, then leave: key kept
+    inside = shrine_id(5, 12, "W", 2, True)  # warden returns, key stays
+    assert inside in graph["nodes"]
+    leave = graph["nodes"][shrine_id(5, 12, "E", 2, True)]["moves"]["F"]
+    assert leave == normal_id(6, 12, "E", True)
 
 
 def test_arena_entry_full_hp(graph, lvl):
@@ -63,12 +111,12 @@ def test_fire_chain(graph):
     assert hp3["moves"]["X"] == nid_hp3.replace("h3", "h2")
     some_normal = next(n for n in graph["nodes"].values() if n["kind"] == "normal")
     nid = next(k for k, v in graph["nodes"].items() if v is some_normal)
-    assert some_normal["moves"]["X"] == nid  # dry fire outside the arena
+    assert some_normal["moves"]["X"] == nid  # dry fire outside fights
 
 
 def test_arena_exit_and_regeneration(graph, lvl):
     gx, gy = lvl.gate
-    entry = arena_id(gx, gy - 1, "S", 3)  # hurt monolith, facing back to the gate
+    entry = arena_id(gx, gy - 1, "S", 3)
     assert entry in graph["nodes"]
     assert graph["nodes"][entry]["moves"]["F"] == normal_id(gx, gy, "S", True)
     assert graph["nodes"][normal_id(gx, gy, "N", True)]["moves"]["F"] == arena_id(gx, gy - 1, "N", 4)
@@ -101,7 +149,9 @@ def test_renderer_smoke(lvl):
     from detached_head.render import Renderer
 
     r = Renderer(lvl, make_textures(), make_sprites())
-    frame = r.frame(*lvl.spawn, "N", key=False, hp=None, sprites=[])
+    frame = r.frame(*lvl.spawn, "N", key=False, sprites=[])
+    assert frame.size == (960, 600)
+    frame = r.frame(5, 12, "W", key=False, sprites=[(4, 12, "warden2")], bar=("THE WARDEN", 2, 2))
     assert frame.size == (960, 600)
 
 
@@ -112,3 +162,6 @@ def test_markdown_emission(graph, lvl):
     assert "[\u2302 index](../README.md)" in md
     win = emit.win_md()
     assert "YOU ESCAPED" in win and "LEADERBOARD" in win
+    shrine_node = next(n for n in graph["nodes"].values() if n["kind"] == "shrine" and n["hp"] > 0)
+    hdr = emit._header("x", shrine_node, lvl)
+    assert "THE WARDEN" in hdr

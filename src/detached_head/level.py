@@ -27,8 +27,9 @@ ZONES: dict[str, str] = {
     "arena": "prod",
 }
 
-FLOOR_CHARS = set("fhdkgrA@Knuvwp.GM")
+FLOOR_CHARS = set("fhdkgrA@Knuvwp.GMqT")
 WALL_CHARS = set("#%~!")
+SHRINE_CHARS = set("qKT")  # shrine floor, the guarded key cell, trophy cells
 
 # sprite char -> sprite kind (art.py keys)
 SPRITE_KINDS = {
@@ -43,6 +44,17 @@ SPRITE_KINDS = {
 
 
 @dataclass
+class Shrine:
+    """A warden-guarded chamber. Entering from outside spawns the warden at
+    full health; its state lives only inside this chamber's sub-graph."""
+
+    name: str
+    cells: set[tuple[int, int]]
+    anchor: tuple[int, int]  # the guarded cell: 'K' (key) or 'T' (trophy)
+    kind: str  # "key" | "trophy"
+
+
+@dataclass
 class Level:
     grid: list[str]
     width: int
@@ -52,6 +64,7 @@ class Level:
     key: tuple[int, int] = (0, 0)
     boss: tuple[int, int] = (0, 0)
     sprites: list[tuple[int, int, str]] = field(default_factory=list)
+    shrines: dict[tuple[int, int], Shrine] = field(default_factory=dict)  # cell -> shrine
     _tex_cache: dict[tuple[int, int], str] = field(default_factory=dict, repr=False)
 
     def char(self, x: int, y: int) -> str:
@@ -66,14 +79,22 @@ class Level:
         return self.char(x, y) in "AM"
 
     def passable(self, x: int, y: int, key: bool) -> bool:
+        """Normal-world passability. Shrine mechanics (warden, guarded cells)
+        are resolved by graph.py; here the guarded cells are simply closed."""
         c = self.char(x, y)
-        if c not in FLOOR_CHARS:
+        if c not in FLOOR_CHARS or c in "KT":
             return False
-        if c == "G":  # the merge gate only opens for the key holder
+        if c == "G":  # the gate only opens for the key holder
             return key
-        return True  # stepping onto the key cell is what grants the key
+        return True
+
+    def shrine_at(self, x: int, y: int) -> Shrine | None:
+        return self.shrines.get((x, y))
 
     def zone(self, x: int, y: int) -> str:
+        shrine = self.shrines.get((x, y))
+        if shrine is not None:
+            return shrine.name
         c = self.char(x, y)
         if c == "@":
             return "main"
@@ -129,6 +150,40 @@ def _neighbours(x: int, y: int):
                 yield x + dx, y + dy
 
 
+def _discover_shrines(lvl: Level) -> None:
+    """Flood-fill shrine chambers (q/K/T cells) and classify them."""
+    visited: set[tuple[int, int]] = set()
+    found: list[Shrine] = []
+    for y in range(lvl.height):
+        for x in range(lvl.width):
+            if (x, y) in visited or lvl.char(x, y) not in SHRINE_CHARS:
+                continue
+            comp: set[tuple[int, int]] = set()
+            stack = [(x, y)]
+            while stack:
+                cx, cy = stack.pop()
+                if (cx, cy) in comp or lvl.char(cx, cy) not in SHRINE_CHARS:
+                    continue
+                comp.add((cx, cy))
+                stack.extend(((cx + 1, cy), (cx - 1, cy), (cx, cy + 1), (cx, cy - 1)))
+            visited |= comp
+            key_cells = [c for c in comp if lvl.char(*c) == "K"]
+            trophy_cells = [c for c in comp if lvl.char(*c) == "T"]
+            if key_cells:
+                found.append(Shrine("the shrine of the key", comp, key_cells[0], "key"))
+            elif trophy_cells:
+                found.append(Shrine("", comp, trophy_cells[0], "trophy"))
+    trophy_names = ["the shrine of the frozen sprint", "the shrine of the rewrite"]
+    trophy_idx = 0
+    found.sort(key=lambda s: (s.anchor[1], s.anchor[0]))
+    for shrine in found:
+        if shrine.kind == "trophy":
+            shrine.name = trophy_names[min(trophy_idx, len(trophy_names) - 1)]
+            trophy_idx += 1
+        for cell in shrine.cells:
+            lvl.shrines[cell] = shrine
+
+
 def load(path) -> Level:
     rows = [line.rstrip("\n") for line in open(path, encoding="utf-8") if line.strip()]
     width = len(rows[0])
@@ -143,25 +198,18 @@ def load(path) -> Level:
                 lvl.gate = (x, y)
             if c in SPRITE_KINDS and c not in "KM":
                 lvl.sprites.append((x, y, SPRITE_KINDS[c]))
-    # K is both a pickup target and a sprite anchor; M is the boss anchor
     for y, row in enumerate(rows):
         for x, c in enumerate(row):
             if c == "K":
                 lvl.key = (x, y)
-                lvl.sprites.append((x, y, "key"))
             elif c == "M":
                 lvl.boss = (x, y)
                 lvl.sprites.append((x, y, "boss"))
+    _discover_shrines(lvl)
     return lvl
 
 
 def visible_sprites(lvl: Level, key: bool) -> list[tuple[int, int, str]]:
-    """World sprites for a frame in the given key state (the key vanishes once taken)."""
-    out = []
-    for x, y, kind in lvl.sprites:
-        if kind == "key" and key:
-            continue
-        if kind == "boss":
-            continue  # the boss is drawn by the arena renderer, per hp state
-        out.append((x, y, kind))
-    return out
+    """Static world sprites for a frame (bugs; the boss, wardens, key and
+    trophies are placed by the arena/shrine renderers)."""
+    return [s for s in lvl.sprites if s[2].startswith("bug")]

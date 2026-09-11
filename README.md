@@ -9,19 +9,26 @@
 ---
 
 You fell asleep at your desk and woke up **inside a repository** — a dungeon
-made of code, frozen creatures and half-remembered decisions. Somewhere in
-the dark wing a **golden key** is still warm. It opens **the gate** — and
-behind the gate waits **THE DEBT**: the ancient thing that has been growing
-in the dark since 2009, grinning, with a burning `$` in its chest.
+made of code, frozen creatures and half-remembered decisions.
 
-Find the key. Open the gate. Slay THE DEBT. Then you can go home.
+Your way out needs three kills and a key. **Three wardens** patrol the wings:
+one guards the **golden key**, two guard old trophies in dead-end shrines.
+Each takes two hits — and each returns to full strength if you flee its
+shrine. The key opens **the gate**, and behind the gate waits **THE DEBT**:
+the ancient thing that has been growing in the dark since 2009, grinning,
+with a burning `$` in its chest. It takes four hits. It does not stay dead
+if you run.
+
+Slay the wardens. Take the key. Open the gate. End THE DEBT. Then you can
+go home.
 
 *(Devs: yes, the wings are branches, the walls are logs and merge conflicts,
-and the gun says `blame` on the barrel. That layer is yours. Everyone else
-gets a dungeon, a key, a gate and a monster.)*
+and the victory screen credits `git blame` as the cleanup crew. That layer
+is yours. Everyone else gets a dungeon, wardens, a key, a gate and a
+monster.)*
 
-<p align="center"><img src="assets/x20y21N.webp" width="46%" alt="spawn · branch main"><img src="assets/x06y12W.webp" width="46%" alt="the golden key · feature/dark-mode"></p>
-<p align="center"><img src="assets/x20y11N.webp" width="46%" alt="the gate · locked"><img src="assets/x20y05Nh4.webp" width="46%" alt="THE DEBT · prod"></p>
+<p align="center"><img src="assets/x20y21N.webp" width="46%" alt="spawn · branch main"><img src="assets/x06y12W.webp" width="46%" alt="the shrine of the key · warden ahead"></p>
+<p align="center"><img src="assets/x20y11N.webp" width="46%" alt="the gate · locked"><img src="assets/x20y05Nh4.webp" width="46%" alt="THE DEBT · behind the gate"></p>
 
 ## How to play
 
@@ -32,9 +39,9 @@ Every screen is one markdown file. One click = one move.
 | ⬆️ | step forward | | ⬅️ / ➡️ | turn left / right |
 | ⬇️ | step back | | 💥 | fire |
 
-🔑 The key picks itself up when you walk into it.
-🚫 ⛔️ means a wall (or a locked gate).
-⚔ THE DEBT grows back if you flee the arena and return.
+🔑 The key picks itself up when you walk into it — once its warden is down.
+🚫 ⛔️ means a wall, a locked gate, or a warden still standing his ground.
+⚔ Wardens and THE DEBT regenerate if you flee their chamber and come back.
 
 **This is turn-based by nature.** Every click is a page load on github.com —
 the repository chrome blinks, then your new frame arrives. That is not a bug
@@ -47,7 +54,7 @@ not like Quake. (There is also no sound. The repo is very quiet.)
 
 ## How this works (no, there is no engine)
 
-- The whole game is **4233 markdown files** hyperlinked into a stateless graph: one file per (position × facing × world state).
+- The whole game is **4225 markdown files** hyperlinked into a stateless graph: one file per (position × facing × world state).
 - Walls are **missing links**. The boss has health because its HP lives only inside the arena sub-graph — that trick is why this game can do things a "Doom in a README" cannot.
 - Frames are raycast-rendered by a ~100%-numpy Wolfenstein-style renderer, with procedurally generated textures, sprites, HUD and minimap. Zero external assets.
 - Speedruns: open an issue `/run FFRRX...` and a GitHub Action replays your route over `data/graph.json`. See [LEADERBOARD.md](LEADERBOARD.md).

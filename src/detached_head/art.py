@@ -234,6 +234,54 @@ def _monolith(hp: int) -> Image.Image:
     return img
 
 
+def _warden(hp: int) -> Image.Image:
+    """A warden: armored imp-knight guarding a shrine. hp 2 = pristine,
+    hp 1 = cracked and furious. Same readability rules as the imps."""
+    img = _img(80, 104)
+    d = ImageDraw.Draw(img)
+    armor = (58, 48, 66)
+    trim = (160, 92, 200)
+    glow = RED if hp == 2 else (255, 140, 60)
+    # horns
+    d.polygon([(16, 26), (6, 2), (28, 16)], fill=armor, outline=trim)
+    d.polygon([(64, 26), (74, 2), (52, 16)], fill=armor, outline=trim)
+    # body
+    d.rounded_rectangle([14, 18, 66, 98], 10, fill=(0, 0, 0))
+    d.rounded_rectangle([16, 20, 64, 96], 10, fill=armor, outline=trim)
+    # shoulder pads
+    d.rounded_rectangle([4, 22, 20, 38], 5, fill=armor, outline=trim)
+    d.rounded_rectangle([60, 22, 76, 38], 5, fill=armor, outline=trim)
+    # visor eyes
+    d.rectangle([24, 32, 38, 42], fill=(10, 6, 10))
+    d.rectangle([42, 32, 56, 42], fill=(10, 6, 10))
+    d.rectangle([26, 34, 36, 40], fill=glow)
+    d.rectangle([44, 34, 54, 40], fill=glow)
+    # chest rune
+    d.rectangle([32, 52, 48, 72], fill=(12, 8, 14), outline=trim)
+    d.text((36, 54), "W", font=_font(16, bold=True), fill=glow)
+    # legs
+    d.rectangle([22, 98, 36, 104], fill=armor, outline=trim)
+    d.rectangle([44, 98, 58, 104], fill=armor, outline=trim)
+    if hp == 1:  # cracked
+        d.line([(16, 24), (30, 60), (22, 90)], fill=(220, 210, 230), width=2)
+        d.line([(62, 30), (50, 66), (58, 92)], fill=(200, 190, 210), width=1)
+        d.text((34, 76), "!", font=_font(18, bold=True), fill=(255, 140, 60))
+    return img
+
+
+def _trophy() -> Image.Image:
+    """A glowing rune stone: the shrine's reward."""
+    img = _img(48, 64)
+    d = ImageDraw.Draw(img)
+    stone = (70, 64, 90)
+    d.polygon([(8, 58), (12, 18), (24, 6), (38, 14), (42, 56), (26, 62)], fill=stone, outline=(120, 108, 150))
+    d.polygon([(16, 50), (24, 26), (34, 48)], outline=(247, 197, 66), width=2)
+    d.ellipse([21, 33, 27, 39], fill=(247, 197, 66))
+    d.point((14, 24), fill=(200, 180, 120))
+    d.point((36, 30), fill=(200, 180, 120))
+    return img
+
+
 def make_sprites() -> dict[str, Image.Image]:
     return {
         "bug_red": _imp(RED),
@@ -242,6 +290,9 @@ def make_sprites() -> dict[str, Image.Image]:
         "bug_green": _imp(GREEN),
         "bug_cyan": _imp(CYAN),
         "key": _key_badge(),
+        "trophy": _trophy(),
+        "warden2": _warden(2),
+        "warden1": _warden(1),
         "boss": _monolith(4),
         "boss3": _monolith(3),
         "boss2": _monolith(2),
@@ -285,6 +336,7 @@ def make_win(w: int = 960, h: int = 600) -> Image.Image:
     for i, line in enumerate(("build    \u2713 passed", "tests   \u2713 1337 passed", "deploy  \u2713 shipped")):
         d.text((w // 2, 370 + i * 36), line, font=_font(24), fill=GRAY, anchor="mm")
     d.text((w // 2, 520), "you may go home now.", font=f_sub, fill=GREEN, anchor="mm")
+    d.text((w // 2, 560), "cleanup crew: git blame", font=_font(18), fill=(90, 98, 106), anchor="mm")
     return _scanlines(img)
 
 

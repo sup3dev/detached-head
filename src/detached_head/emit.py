@@ -13,9 +13,9 @@ EMOJI = {"F": "\u2b06\ufe0f", "B": "\u2b07\ufe0f", "L": "\u2b05\ufe0f", "R": "\u
 # frames shown on the front page (id, caption)
 TEASERS = [
     ("x20y21N", "spawn \u00b7 branch main"),
-    ("x06y12W", "the golden key \u00b7 feature/dark-mode"),
+    ("x06y12W", "the shrine of the key \u00b7 warden ahead"),
     ("x20y11N", "the gate \u00b7 locked"),
-    ("x20y05Nh4", "THE DEBT \u00b7 prod"),
+    ("x20y05Nh4", "THE DEBT \u00b7 behind the gate"),
 ]
 
 
@@ -23,12 +23,23 @@ def _header(nid: str, node: dict, lvl: Level) -> str:
     zone = node["zone"]
     branch = {"win": "deployed"}.get(zone, zone)
     if node["kind"] == "win":
-        return "### `branch: prod` \u00b7 deploy pipeline \u00b7 all checks passed"
+        return "### `branch: prod` \u00b7 the way out \u00b7 all checks passed"
     pos = f"\U0001f4cd ({node['cell'][0]}, {node['cell'][1]})"
     facing = f"facing {node['angle']}"
     if node["kind"] == "arena":
         bar = "\u2588" * node["hp"] + "\u2591" * (4 - node["hp"])
         return f"### `branch: prod` \u00b7 {pos} \u00b7 {facing} \u00b7 \u2694 THE DEBT [{bar} {node['hp']}/4]"
+    if node["kind"] == "shrine":
+        if node["hp"] > 0:
+            bar = "\u2588" * node["hp"] + "\u2591" * (2 - node["hp"])
+            suffix = f"\u2694 THE WARDEN [{bar} {node['hp']}/2]"
+        else:
+            suffix = "\u2721 cleared"
+        flavor = ""
+        shrine = lvl.shrine_at(node["cell"][0], node["cell"][1])
+        if node["hp"] == 0 and shrine is not None and shrine.kind == "trophy" and shrine.anchor == tuple(node["cell"]):
+            flavor = " \u00b7 you take the Seal"
+        return f"### {zone} \u00b7 {pos} \u00b7 {facing} \u00b7 {suffix}{flavor}"
     key = "\U0001f511 THE KEY" if node["key"] else "\U0001f511 \u2014"
     return f"### `branch: {branch}` \u00b7 {pos} \u00b7 {facing} \u00b7 {key}"
 
@@ -142,16 +153,23 @@ def emit_readme(graph: dict, lvl: Level, root: Path, fmt: str = "webp") -> None:
 ---
 
 You fell asleep at your desk and woke up **inside a repository** \u2014 a dungeon
-made of code, frozen creatures and half-remembered decisions. Somewhere in
-the dark wing a **golden key** is still warm. It opens **the gate** \u2014 and
-behind the gate waits **THE DEBT**: the ancient thing that has been growing
-in the dark since 2009, grinning, with a burning `$` in its chest.
+made of code, frozen creatures and half-remembered decisions.
 
-Find the key. Open the gate. Slay THE DEBT. Then you can go home.
+Your way out needs three kills and a key. **Three wardens** patrol the wings:
+one guards the **golden key**, two guard old trophies in dead-end shrines.
+Each takes two hits \u2014 and each returns to full strength if you flee its
+shrine. The key opens **the gate**, and behind the gate waits **THE DEBT**:
+the ancient thing that has been growing in the dark since 2009, grinning,
+with a burning `$` in its chest. It takes four hits. It does not stay dead
+if you run.
+
+Slay the wardens. Take the key. Open the gate. End THE DEBT. Then you can
+go home.
 
 *(Devs: yes, the wings are branches, the walls are logs and merge conflicts,
-and the gun says `blame` on the barrel. That layer is yours. Everyone else
-gets a dungeon, a key, a gate and a monster.)*
+and the victory screen credits `git blame` as the cleanup crew. That layer
+is yours. Everyone else gets a dungeon, wardens, a key, a gate and a
+monster.)*
 
 {teasers}
 
@@ -164,9 +182,9 @@ Every screen is one markdown file. One click = one move.
 | \u2b06\ufe0f | step forward | | \u2b05\ufe0f / \u27a1\ufe0f | turn left / right |
 | \u2b07\ufe0f | step back | | \U0001F4A5 | fire |
 
-\U0001f511 The key picks itself up when you walk into it.
-\U0001f6ab \u26d4\ufe0f means a wall (or a locked gate).
-\u2694 THE DEBT grows back if you flee the arena and return.
+\U0001f511 The key picks itself up when you walk into it \u2014 once its warden is down.
+\U0001f6ab \u26d4\ufe0f means a wall, a locked gate, or a warden still standing his ground.
+\u2694 Wardens and THE DEBT regenerate if you flee their chamber and come back.
 
 **This is turn-based by nature.** Every click is a page load on github.com \u2014
 the repository chrome blinks, then your new frame arrives. That is not a bug
