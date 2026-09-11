@@ -276,35 +276,14 @@ class Renderer:
         frame.paste(mimg, (mx, my))
         d.rectangle([mx - 1, my - 1, mx + mw, my + mh], outline=(48, 54, 61))
 
-        # the blaster, seen from behind: barrel going away from you, two
-        # hands on the grip. A gun must read as a gun.
-        gun = Image.new("RGBA", (76, 62), (0, 0, 0, 0))
-        gd = ImageDraw.Draw(gun)
-        metal = (58, 66, 77)
-        metal_dark = (36, 42, 50)
-        metal_edge = (100, 112, 126)
-        # barrel tube pointing away (up), with a dark bore at the top
-        gd.rounded_rectangle([29, 0, 47, 30], 8, fill=metal, outline=metal_edge)
-        gd.ellipse([33, 3, 43, 13], fill=(8, 10, 13), outline=metal_dark)
-        gd.arc([33, 3, 43, 13], 180, 360, fill=metal_edge)
-        # slide/receiver, widening toward the player
-        gd.polygon([(24, 28), (52, 28), (58, 44), (18, 44)], fill=metal, outline=metal_edge)
-        gd.rectangle([24, 32, 52, 34], fill=metal_dark)  # ejection port
-        gd.rectangle([34, 22, 42, 25], fill=art.GREEN)  # charge LED
-        # rear sight wings
-        gd.rectangle([18, 44, 26, 50], fill=(74, 84, 96), outline=metal_edge)
-        gd.rectangle([50, 44, 58, 50], fill=(74, 84, 96), outline=metal_edge)
-        # hands wrapping the grip (olive gloves, knuckle shading)
-        hand = (128, 106, 76)
-        hand_edge = (86, 70, 48)
-        gd.rounded_rectangle([4, 40, 36, 62], 8, fill=hand, outline=hand_edge)
-        gd.rounded_rectangle([40, 40, 72, 62], 8, fill=hand, outline=hand_edge)
-        gd.rectangle([10, 46, 30, 54], fill=(108, 88, 62))
-        gd.rectangle([46, 46, 66, 54], fill=(108, 88, 62))
-        for hx in (14, 22, 28, 50, 58, 64):  # knuckles
-            gd.ellipse([hx, 44, hx + 4, 48], fill=(150, 126, 92))
-        gun_big = gun.resize((76 * 5, 62 * 5), Image.NEAREST)
-        frame.paste(gun_big, ((W - 76 * 5) // 2, H - 62 * 5 + 18), gun_big)
+        # small crosshair: four ticks and a dot, nothing else
+        ccx, ccy = W // 2, H // 2
+        for dx, dy in ((0, -1), (0, 1), (-1, 0), (1, 0)):
+            x0 = ccx + dx * 10
+            y0 = ccy + dy * 10
+            d.line([(x0 - dx * 14, y0 - dy * 14), (x0, y0)], fill=(6, 10, 8), width=5)
+            d.line([(x0 - dx * 14, y0 - dy * 14), (x0, y0)], fill=art.GREEN, width=3)
+        d.ellipse([ccx - 2, ccy - 2, ccx + 2, ccy + 2], fill=art.GREEN)
 
         # key slot, bottom-right
         box_w = 210
