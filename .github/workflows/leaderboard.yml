@@ -33,8 +33,16 @@ jobs:
           import os
           title = (os.environ.get("TITLE") or "").strip()
           if title[:4].lower() == "/run":
+              rest = title[4:].strip()
+              category, _, tail = rest.partition(" ")
+              if category.lower() in ("any", "bugs", "scenic") and tail:
+                  category = category.lower()
+                  rest = tail.strip()
+              else:
+                  category = "any"
               print("should_run=true")
-              print("route=" + title[4:].strip())
+              print("category=" + category)
+              print("route=" + rest)
           else:
               print("should_run=false")
           PY
@@ -56,16 +64,17 @@ jobs:
         env:
           PLAYER: ${{ github.event.issue.user.login }}
           ROUTE: ${{ steps.parse.outputs.route }}
+          CATEGORY: ${{ steps.parse.outputs.category }}
         run: |
           set +e
-          python -m detached_head.leaderboard --submit "$PLAYER" "$ROUTE" > result.md 2>&1
+          python -m detached_head.leaderboard --category "$CATEGORY" --submit "$PLAYER" "$ROUTE" > result.md 2>&1
           status=$?
           set -e
           {
             echo "status=$status"
             if [ "$status" -eq 0 ]; then
               echo "ok=true"
-              echo "clicks=$(sed -n 's/^Run accepted: \([0-9][0-9]*\) clicks.*/\1/p' result.md | head -n 1)"
+              echo "clicks=$(sed -n 's/^Run accepted: \([a-z%0-9.]* \)\?\([0-9][0-9]*\) clicks.*/\2/p' result.md | head -n 1)"
             else
               echo "ok=false"
             fi
@@ -81,7 +90,7 @@ jobs:
             echo "LEADERBOARD.md unchanged, nothing to commit"
             exit 0
           fi
-          git commit -m "leaderboard: @${{ github.event.issue.user.login }} ${{ steps.validate.outputs.clicks }} clicks [skip ci]"
+          git commit -m "leaderboard: @${{ github.event.issue.user.login }} ${{ steps.parse.outputs.category }}% ${{ steps.validate.outputs.clicks }} clicks [skip ci]"
           git push
 
       - name: Comment result and close issue

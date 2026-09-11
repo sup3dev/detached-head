@@ -111,49 +111,67 @@ def emit_markdown(graph: dict, lvl: Level, root: Path, fmt: str = "webp") -> Non
 
 
 def emit_leaderboard(root: Path) -> None:
-    """(Re)write the leaderboard page, PRESERVING live results between the
-    markers — the CI bot owns that section; a rebuild must not wipe it."""
+    """(Re)write the leaderboard page, PRESERVING live results in every
+    category section — the CI bot owns those; a rebuild must not wipe them."""
     path = root / "LEADERBOARD.md"
+    text = LEADERBOARD_MD
     if path.exists():
         old = path.read_text(encoding="utf-8")
-        begin = old.find(BOARD_BEGIN)
-        end = old.find(BOARD_END)
-        if begin != -1 and end != -1 and end > begin:
-            rows = old[begin + len(BOARD_BEGIN):end].strip("\n")
-            text = LEADERBOARD_MD.replace(
-                BOARD_BEGIN + "\n| # | Player | Clicks | Date |\n|---|--------|--------|------|\n" + BOARD_END,
-                BOARD_BEGIN + "\n" + rows + "\n" + BOARD_END,
-            )
-            path.write_text(text, encoding="utf-8", newline="\n")
-            return
-    path.write_text(LEADERBOARD_MD, encoding="utf-8", newline="\n")
+        for category in ("", ":bugs", ":scenic"):
+            begin_marker = f"<!-- LEADERBOARD{category}:BEGIN -->"
+            end_marker = f"<!-- LEADERBOARD{category}:END -->"
+            ob, oe = old.find(begin_marker), old.find(end_marker)
+            nb, ne = text.find(begin_marker), text.find(end_marker)
+            if ob != -1 and oe > ob and nb != -1 and ne > nb:
+                rows = old[ob + len(begin_marker):oe].strip("\n")
+                text = text[: nb + len(begin_marker)] + "\n" + rows + "\n" + text[ne:]
+    path.write_text(text, encoding="utf-8", newline="\n")
 
 
-LEADERBOARD_MD = """# \U0001f3c1 Shortest-route leaderboard
+LEADERBOARD_MD = """# \U0001f3c1 Leaderboards
 
-The escape, measured in **clicks**. Route to beat: **62 clicks**
-(7 aimed shots: THE OLDEST BUG \u00d73, THE DEBT \u00d74).
+This game has no JavaScript and no state, so nothing about a playthrough can
+be recorded \u2014 the contest is the **route** you submit, like a list of chess
+moves. Tokens: \u2b06\ufe0f `F` forward \u00b7 \u2b07\ufe0f `B` back \u00b7 \u2b05\ufe0f `L` left \u00b7 \u27a1\ufe0f `R` right \u00b7 \U0001F4A5 `X` fire.
 
-## How to compete
+Open an issue titled `/run <tokens>` \u2014 or `/run bugs <tokens>`,
+`/run scenic <tokens>` for the other categories. A GitHub Action replays
+your route over `data/graph.json`; broken routes are rejected naming the
+exact click where they die. Solvers are legal (`tools/solve.py` proves the
+any% floor). One best result per player, per category.
 
-No recordings, no timers \u2014 this game has no JavaScript, so nothing can be
-tracked. You submit a **route**, like a list of chess moves:
+## any% \u2014 the escape (fewest clicks)
 
-1. Plan your escape on the map in the README and write it as tokens, one
-   letter per click: \u2b06\ufe0f `F` forward \u00b7 \u2b07\ufe0f `B` back \u00b7 \u2b05\ufe0f `L` turn left \u00b7 \u27a1\ufe0f `R` turn right \u00b7 \U0001F4A5 `X` fire.
-   A route looks like `FFRRRFFXFF...`.
-2. Open an issue titled `/run FFRRFX...` with your route.
-3. A GitHub Action replays it over `data/graph.json`. Broken routes are
-   rejected naming the exact click where they die \u2014 fix and resubmit.
-
-`graph.json` is public and **writing a solver is legal** \u2014 the first to beat
-62 will probably do it with code. That is not cheating; that is the sport.
-One best result per player.
+`tools/solve.py` already proves **62** optimal here; this table is the
+tutorial. The real fights are below.
 
 <!-- LEADERBOARD:BEGIN -->
 | # | Player | Clicks | Date |
 |---|--------|--------|------|
 <!-- LEADERBOARD:END -->
+
+## bugs% \u2014 the extermination (fewest clicks)
+
+One route: kill **all five wing bugs**, **THE OLDEST BUG** and **THE DEBT**.
+Wing bugs regenerate when you leave their wing, so order matters \u2014 this is
+prize-collecting, not plain BFS. No solver shipped; that's the category.
+
+<!-- LEADERBOARD:bugs:BEGIN -->
+| # | Player | Clicks | Date |
+|---|--------|--------|------|
+<!-- LEADERBOARD:bugs:END -->
+
+## scenic% \u2014 the long way home (most clicks, cap 666)
+
+The **longest** valid route to the escape. Longest-path is NP-hard; iterate
+through issues. Waste elegantly.
+
+<!-- LEADERBOARD:scenic:BEGIN -->
+| # | Player | Clicks | Date |
+|---|--------|--------|------|
+<!-- LEADERBOARD:scenic:END -->
+
+Details and local testing: [docs/LEADERBOARD.md](docs/LEADERBOARD.md).
 """
 
 

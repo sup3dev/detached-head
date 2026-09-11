@@ -94,18 +94,19 @@ def test_load_graph_rejects_incomplete_graph(tmp_path):
 
 def test_happy_path_reaches_win(graph):
     result = validate_run(graph, "FX")
-    assert result == {"ok": True, "clicks": 2, "end": "WIN"}
+    assert result["ok"] and result["clicks"] == 2 and result["end"] == "WIN"
 
 
 @pytest.mark.parametrize("route", ["fx", "f x", "F,X", " , F,,,x , "])
 def test_route_case_and_separators_ignored(graph, route):
-    assert validate_run(graph, route) == {"ok": True, "clicks": 2, "end": "WIN"}
+    result = validate_run(graph, route)
+    assert result["ok"] and result["clicks"] == 2 and result["end"] == "WIN"
 
 
 def test_turn_and_back_moves_are_clicks(graph):
     # L (turn) + R (turn back) + F + B (step back) + F + X = 6 clicks.
     result = validate_run(graph, "LRFBFX")
-    assert result == {"ok": True, "clicks": 6, "end": "WIN"}
+    assert result["ok"] and result["clicks"] == 6 and result["end"] == "WIN"
 
 
 def test_invalid_token_rejected(graph):
@@ -144,7 +145,7 @@ def test_route_not_reaching_win_rejected(graph, route):
 @pytest.mark.parametrize("route", ["", "   ", " , , "])
 def test_empty_route_rejected(graph, route):
     result = validate_run(graph, route)
-    assert result == {"ok": False, "error": "route is empty", "clicks": 0}
+    assert result["ok"] is False and result["error"] == "route is empty"
 
 
 def test_tokens_after_win_rejected(graph):
@@ -281,3 +282,63 @@ def test_route_length_at_cap_is_not_spam(graph):
     result = validate_run(graph, route)
     assert result["ok"] is False  # valid tokens, but never reaches WIN
     assert "spam" not in result["error"]
+
+
+# --- categories -----------------------------------------------------------
+
+def _mini_graph_with_kills(tmp_path, bugs_required=1):
+    """n0 --X--> n0d (wing bug down), n0 --F--> s3 (shrine) --XXX--> s0 --F--> WIN."""
+    graph = {
+        "meta": {"name": "CATS", "level": "test", "moves": ["F", "B", "L", "R", "X"],
+                  "bugs_required": bugs_required},
+        "start": "n0", "win": "WIN",
+        "nodes": {
+            "n0": {"cell": [0, 0], "kind": "normal", "imp_dead": 0,
+                   "moves": {"F": "s3", "B": None, "L": "n0", "R": "n0", "X": "n0d"}},
+            "n0d": {"cell": [0, 0], "kind": "normal", "imp_dead": 1,
+                    "moves": {"F": "s3", "B": None, "L": "n0d", "R": "n0d", "X": "n0d"}},
+            "s3": {"cell": [1, 0], "kind": "shrine", "hp": 3,
+                   "moves": {"F": None, "B": "n0", "L": "s3", "R": "s3", "X": "s2"}},
+            "s2": {"cell": [1, 0], "kind": "shrine", "hp": 2,
+                   "moves": {"F": None, "B": "n0", "L": "s2", "R": "s2", "X": "s1"}},
+            "s1": {"cell": [1, 0], "kind": "shrine", "hp": 1,
+                   "moves": {"F": None, "B": "n0", "L": "s1", "R": "s1", "X": "s0"}},
+            "s0": {"cell": [1, 0], "kind": "shrine", "hp": 0,
+                   "moves": {"F": "WIN", "B": "n0", "L": "s0", "R": "s0", "X": "s0"}},
+            "WIN": {"kind": "win", "moves": {}},
+        },
+    }
+    path = tmp_path / "graph.json"
+    path.write_bytes(json.dumps(graph).encode("utf-8"))
+    return path
+
+
+def test_bugs_category_requires_the_kills(tmp_path):
+    path = _mini_graph_with_kills(tmp_path)
+    graph = load_graph(path)
+    good = validate_run(graph, "XFXXXF", category="bugs")
+    assert good["ok"] and good["clicks"] == 6
+    assert good["imp_kills"] == 1 and good["oldest_kills"] == 1
+    bad = validate_run(graph, "FXXXF", category="bugs")
+    assert bad["ok"] is False and "bugs% requires" in bad["error"]
+
+
+def test_scenic_category_cap_and_acceptance(tmp_path):
+    path = _mini_graph_with_kills(tmp_path)
+    graph = load_graph(path)
+    ok = validate_run(graph, "FXXXF", category="scenic")
+    assert ok["ok"] and ok["clicks"] == 5
+    too_long = validate_run(graph, "L" * 700 + "FXXXF", category="scenic")
+    assert too_long["ok"] is False and "capped" in too_long["error"]
+
+
+def test_scenic_board_ranks_descending(tmp_path):
+    from detached_head.leaderboard import update_leaderboard, player_place
+    board = tmp_path / "LEADERBOARD.md"
+    update_leaderboard(board, {"player": "a", "route": "", "clicks": 100, "date": "2026-09-11"}, category="scenic")
+    update_leaderboard(board, {"player": "b", "route": "", "clicks": 300, "date": "2026-09-11"}, category="scenic")
+    assert player_place(board, "b", category="scenic") == 1
+    assert player_place(board, "a", category="scenic") == 2
+    # and the any board is independent of the scenic board
+    update_leaderboard(board, {"player": "c", "route": "", "clicks": 5, "date": "2026-09-11"})
+    assert player_place(board, "c") == 1
