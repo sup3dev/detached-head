@@ -32,6 +32,11 @@ Every screen is one markdown file. One click = one move.
 🚫 ⛔️ means a wall (or a locked gate).
 ⚔ The monolith regenerates if you flee the arena and come back.
 
+**This is turn-based by nature.** Every click is a page load on github.com —
+the repository chrome blinks, then your new frame arrives. That is not a bug
+to fix, it is the medium's metronome: play it like chess with a raycaster,
+not like Quake. (There is also no sound. The repo is very quiet.)
+
 ## The map
 
 <p align="center"><img src="assets/map.webp" width="70%" alt="repo-01 map"></p>

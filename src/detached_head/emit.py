@@ -164,6 +164,11 @@ Every screen is one markdown file. One click = one move.
 \U0001f6ab \u26d4\ufe0f means a wall (or a locked gate).
 \u2694 The monolith regenerates if you flee the arena and come back.
 
+**This is turn-based by nature.** Every click is a page load on github.com \u2014
+the repository chrome blinks, then your new frame arrives. That is not a bug
+to fix, it is the medium's metronome: play it like chess with a raycaster,
+not like Quake. (There is also no sound. The repo is very quiet.)
+
 ## The map
 
 <p align="center"><img src="assets/map.{fmt}" width="70%" alt="repo-01 map"></p>

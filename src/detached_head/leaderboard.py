@@ -18,6 +18,10 @@ from pathlib import Path
 BOARD_BEGIN = "<!-- LEADERBOARD:BEGIN -->"
 BOARD_END = "<!-- LEADERBOARD:END -->"
 
+# Anti-spam guard for issue-submitted routes: the optimum is ~60 clicks,
+# so anything longer than this is trolling, not speedrunning.
+MAX_ROUTE_TOKENS = 10_000
+
 TABLE_HEADER = "| # | Player | Clicks | Date |"
 TABLE_SEPARATOR = "|---|---|---|---|"
 
@@ -51,6 +55,12 @@ def validate_run(graph: dict, route: str) -> dict:
     tokens = _tokenize(route)
     if not tokens:
         return {"ok": False, "error": "route is empty", "clicks": 0}
+    if len(tokens) > MAX_ROUTE_TOKENS:
+        return {
+            "ok": False,
+            "error": f"route exceeds {MAX_ROUTE_TOKENS} clicks (spam guard)",
+            "clicks": 0,
+        }
 
     valid_moves = list(graph.get("meta", {}).get("moves", []))
     valid = set(valid_moves)

@@ -266,3 +266,18 @@ def test_duplicate_player_equal_clicks_keeps_first_date(tmp_path):
     update_leaderboard(board, entry("alice", 5, "2026-01-01"))
     update_leaderboard(board, entry("alice", 5, "2026-02-02"))
     assert "| 1 | alice | 5 | 2026-01-01 |" in board.read_bytes().decode("utf-8")
+
+
+def test_route_length_spam_guard(graph):
+    result = validate_run(graph, "F" * 10001)
+    assert result["ok"] is False
+    assert "spam guard" in result["error"]
+    assert result["clicks"] == 0
+
+
+def test_route_length_at_cap_is_not_spam(graph):
+    # exactly at the cap the run is judged on its merits, not rejected outright
+    route = "L" * 10000  # turning in place never hits a wall
+    result = validate_run(graph, route)
+    assert result["ok"] is False  # valid tokens, but never reaches WIN
+    assert "spam" not in result["error"]
