@@ -167,3 +167,17 @@ def test_markdown_emission(graph, lvl):
     assert "THE OLDEST BUG" in hdr
     dead_node = next(n for n in graph["nodes"].values() if n["imp_dead"])
     assert "bug deleted" in emit._header("x", dead_node, lvl)
+
+
+def test_rebuild_preserves_leaderboard_rows(tmp_path):
+    from detached_head.emit import LEADERBOARD_MD, emit_leaderboard
+
+    board = tmp_path / "LEADERBOARD.md"
+    board.write_text(LEADERBOARD_MD.replace(
+        "<!-- LEADERBOARD:END -->",
+        "| 1 | someone | 58 | 2026-09-12 |\n<!-- LEADERBOARD:END -->",
+    ), encoding="utf-8")
+    emit_leaderboard(tmp_path)  # a rebuild must not wipe the CI-written row
+    text = board.read_text(encoding="utf-8")
+    assert "| someone | 58 |" in text
+    assert "Shortest-route leaderboard" in text  # while still refreshing the copy

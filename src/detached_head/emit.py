@@ -9,6 +9,8 @@ from pathlib import Path
 from .level import Level
 
 EMOJI = {"F": "\u2b06\ufe0f", "B": "\u2b07\ufe0f", "L": "\u2b05\ufe0f", "R": "\u27a1\ufe0f", "X": "\U0001F4A5"}
+BOARD_BEGIN = "<!-- LEADERBOARD:BEGIN -->"
+BOARD_END = "<!-- LEADERBOARD:END -->"
 
 # frames shown on the front page (id, caption)
 TEASERS = [
@@ -109,7 +111,22 @@ def emit_markdown(graph: dict, lvl: Level, root: Path, fmt: str = "webp") -> Non
 
 
 def emit_leaderboard(root: Path) -> None:
-    root.joinpath("LEADERBOARD.md").write_text(LEADERBOARD_MD, encoding="utf-8", newline="\n")
+    """(Re)write the leaderboard page, PRESERVING live results between the
+    markers — the CI bot owns that section; a rebuild must not wipe it."""
+    path = root / "LEADERBOARD.md"
+    if path.exists():
+        old = path.read_text(encoding="utf-8")
+        begin = old.find(BOARD_BEGIN)
+        end = old.find(BOARD_END)
+        if begin != -1 and end != -1 and end > begin:
+            rows = old[begin + len(BOARD_BEGIN):end].strip("\n")
+            text = LEADERBOARD_MD.replace(
+                BOARD_BEGIN + "\n| # | Player | Clicks | Date |\n|---|--------|--------|------|\n" + BOARD_END,
+                BOARD_BEGIN + "\n" + rows + "\n" + BOARD_END,
+            )
+            path.write_text(text, encoding="utf-8", newline="\n")
+            return
+    path.write_text(LEADERBOARD_MD, encoding="utf-8", newline="\n")
 
 
 LEADERBOARD_MD = """# \U0001f3c1 Shortest-route leaderboard
