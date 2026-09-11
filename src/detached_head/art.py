@@ -234,70 +234,79 @@ def _monolith(hp: int) -> Image.Image:
     return img
 
 
-def _warden(hp: int) -> Image.Image:
-    """A warden: armored imp-knight guarding a shrine. hp 2 = pristine,
-    hp 1 = cracked and furious. Same readability rules as the imps."""
-    img = _img(80, 104)
+def _imp_dead(color) -> Image.Image:
+    """A squashed bug: flattened, legs up, x eyes. Your kill, while it lasts."""
+    img = _img(48, 28)
     d = ImageDraw.Draw(img)
-    armor = (58, 48, 66)
-    trim = (160, 92, 200)
-    glow = RED if hp == 2 else (255, 140, 60)
-    # horns
-    d.polygon([(16, 26), (6, 2), (28, 16)], fill=armor, outline=trim)
-    d.polygon([(64, 26), (74, 2), (52, 16)], fill=armor, outline=trim)
-    # body
-    d.rounded_rectangle([14, 18, 66, 98], 10, fill=(0, 0, 0))
-    d.rounded_rectangle([16, 20, 64, 96], 10, fill=armor, outline=trim)
-    # shoulder pads
-    d.rounded_rectangle([4, 22, 20, 38], 5, fill=armor, outline=trim)
-    d.rounded_rectangle([60, 22, 76, 38], 5, fill=armor, outline=trim)
-    # visor eyes
-    d.rectangle([24, 32, 38, 42], fill=(10, 6, 10))
-    d.rectangle([42, 32, 56, 42], fill=(10, 6, 10))
-    d.rectangle([26, 34, 36, 40], fill=glow)
-    d.rectangle([44, 34, 54, 40], fill=glow)
-    # chest rune
-    d.rectangle([32, 52, 48, 72], fill=(12, 8, 14), outline=trim)
-    d.text((36, 54), "W", font=_font(16, bold=True), fill=glow)
-    # legs
-    d.rectangle([22, 98, 36, 104], fill=armor, outline=trim)
-    d.rectangle([44, 98, 58, 104], fill=armor, outline=trim)
-    if hp == 1:  # cracked
-        d.line([(16, 24), (30, 60), (22, 90)], fill=(220, 210, 230), width=2)
-        d.line([(62, 30), (50, 66), (58, 92)], fill=(200, 190, 210), width=1)
-        d.text((34, 76), "!", font=_font(18, bold=True), fill=(255, 140, 60))
+    dark = tuple(int(c * 0.5) for c in color)
+    d.ellipse([6, 8, 42, 24], fill=color, outline=dark)  # flattened body
+    d.ellipse([12, 10, 36, 20], fill=dark)
+    for x0, x1 in ((2, 10), (38, 46)):  # legs sticking up
+        d.line([(x0, 12), (x0 + 2, 2)], fill=dark, width=2)
+        d.line([(x1, 12), (x1 - 2, 2)], fill=dark, width=2)
+    f = _font(9, bold=True)
+    d.text((17, 10), "x", font=f, fill=WHITE)
+    d.text((26, 10), "x", font=f, fill=WHITE)
     return img
 
 
-def _trophy() -> Image.Image:
-    """A glowing rune stone: the shrine's reward."""
-    img = _img(48, 64)
+def _oldest_bug(hp: int) -> Image.Image:
+    """THE OLDEST BUG: a hunched, crowned, grey-green elder imp. Three hits:
+    crown straight -> crown crooked -> eyes out. It remembers 2009."""
+    img = _img(96, 112)
     d = ImageDraw.Draw(img)
-    stone = (70, 64, 90)
-    d.polygon([(8, 58), (12, 18), (24, 6), (38, 14), (42, 56), (26, 62)], fill=stone, outline=(120, 108, 150))
-    d.polygon([(16, 50), (24, 26), (34, 48)], outline=(247, 197, 66), width=2)
-    d.ellipse([21, 33, 27, 39], fill=(247, 197, 66))
-    d.point((14, 24), fill=(200, 180, 120))
-    d.point((36, 30), fill=(200, 180, 120))
+    skin = (108, 128, 104)
+    dark = (62, 76, 60)
+    gold = (247, 197, 66)
+    # hunched body
+    d.ellipse([10, 34, 86, 108], fill=(0, 0, 0))
+    d.ellipse([12, 36, 84, 106], fill=skin, outline=dark)
+    d.ellipse([24, 58, 72, 102], fill=dark)  # belly shadow
+    # head
+    d.ellipse([28, 14, 68, 50], fill=skin, outline=dark)
+    # ears/horns
+    d.polygon([(28, 22), (14, 8), (32, 12)], fill=dark)
+    d.polygon([(68, 22), (82, 8), (64, 12)], fill=dark)
+    # crown: straight at full hp, crooked when hurt
+    tilt = 0 if hp == 3 else (6 if hp == 2 else 12)
+    crown = [(36 + tilt, 6), (44, 14), (52, 4), (60, 14), (66 + tilt // 2, 8), (64, 20), (38, 20)]
+    d.polygon(crown, fill=gold, outline=(150, 108, 24))
+    # eyes: wide white with red pupils; X-ed out at hp 1
+    if hp > 1:
+        d.ellipse([36, 26, 48, 38], fill=WHITE, outline=(0, 0, 0))
+        d.ellipse([52, 26, 64, 38], fill=WHITE, outline=(0, 0, 0))
+        d.ellipse([40, 30, 44, 34], fill=RED)
+        d.ellipse([56, 30, 60, 34], fill=RED)
+    else:
+        f = _font(12, bold=True)
+        d.text((38, 26), "x", font=f, fill=(220, 90, 80))
+        d.text((54, 26), "x", font=f, fill=(220, 90, 80))
+    # grin
+    d.line([(38, 44), (43, 41), (48, 44), (53, 41), (58, 44)], fill=(0, 0, 0), width=2)
+    # arms
+    d.ellipse([2, 46, 20, 66], fill=skin, outline=dark)
+    d.ellipse([76, 46, 94, 66], fill=skin, outline=dark)
+    if hp < 3:  # wounds
+        d.line([(20, 60), (30, 80), (24, 96)], fill=(200, 210, 220), width=2)
+    if hp == 1:
+        d.line([(76, 56), (66, 84), (72, 100)], fill=(200, 210, 220), width=2)
+        d.line([(48, 70), (44, 88)], fill=(150, 40, 36), width=2)
     return img
 
 
 def make_sprites() -> dict[str, Image.Image]:
-    return {
-        "bug_red": _imp(RED),
-        "bug_amber": _imp(AMBER),
-        "bug_purple": _imp(PURPLE),
-        "bug_green": _imp(GREEN),
-        "bug_cyan": _imp(CYAN),
-        "key": _key_badge(),
-        "trophy": _trophy(),
-        "warden2": _warden(2),
-        "warden1": _warden(1),
-        "boss": _monolith(4),
-        "boss3": _monolith(3),
-        "boss2": _monolith(2),
-        "boss1": _monolith(1),
-    }
+    colors = {"red": RED, "amber": AMBER, "purple": PURPLE, "green": GREEN, "cyan": CYAN}
+    sprites = {f"bug_{n}": _imp(c) for n, c in colors.items()}
+    sprites.update({f"bug_{n}_dead": _imp_dead(c) for n, c in colors.items()})
+    sprites["key"] = _key_badge()
+    sprites["ancient3"] = _oldest_bug(3)
+    sprites["ancient2"] = _oldest_bug(2)
+    sprites["ancient1"] = _oldest_bug(1)
+    sprites["boss"] = _monolith(4)
+    sprites["boss3"] = _monolith(3)
+    sprites["boss2"] = _monolith(2)
+    sprites["boss1"] = _monolith(1)
+    return sprites
 
 
 # ---------------------------------------------------------------- banners

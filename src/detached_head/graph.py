@@ -22,11 +22,11 @@ from .level import DIRS, LEFT, RIGHT, Level
 MOVES = ("F", "B", "L", "R", "X")
 WIN = "WIN"
 ARENA_HP = (4, 3, 2, 1)
-SHRINE_HP = (2, 1, 0)
+SHRINE_HP = (3, 2, 1, 0)  # THE OLDEST BUG takes three hits before it yields the key
 
 
-def normal_id(cx: int, cy: int, ang: str, key: bool) -> str:
-    return f"x{cx:02d}y{cy:02d}{ang}" + ("k" if key else "")
+def normal_id(cx: int, cy: int, ang: str, key: bool, imp_dead: bool = False) -> str:
+    return f"x{cx:02d}y{cy:02d}{ang}" + ("k" if key else "") + ("d" if imp_dead else "")
 
 
 def arena_id(cx: int, cy: int, ang: str, hp: int) -> str:
@@ -48,42 +48,49 @@ def build_graph(lvl: Level) -> dict:
             nodes[nid] = node
         return nid
 
-    def add_normal(cx: int, cy: int, ang: str, key: bool) -> str:
-        return add(normal_id(cx, cy, ang, key), {
+    def add_normal(cx: int, cy: int, ang: str, key: bool, imp_dead: bool) -> str:
+        return add(normal_id(cx, cy, ang, key, imp_dead), {
             "cell": [cx, cy], "angle": ang, "zone": lvl.zone(cx, cy),
-            "kind": "normal", "key": int(key), "hp": None, "moves": {},
+            "kind": "normal", "key": int(key), "hp": None,
+            "imp_dead": int(imp_dead) if lvl.imp_zone(cx, cy) else None,
+            "moves": {},
         })
 
     def add_arena(cx: int, cy: int, ang: str, hp: int) -> str:
         return add(arena_id(cx, cy, ang, hp), {
             "cell": [cx, cy], "angle": ang, "zone": lvl.zone(cx, cy),
-            "kind": "arena", "key": 1, "hp": hp, "moves": {},
+            "kind": "arena", "key": 1, "hp": hp, "imp_dead": None, "moves": {},
         })
 
     def add_shrine(cx: int, cy: int, ang: str, hp: int, key: bool) -> str:
         return add(shrine_id(cx, cy, ang, hp, key), {
             "cell": [cx, cy], "angle": ang, "zone": lvl.zone(cx, cy),
-            "kind": "shrine", "key": int(key), "hp": hp, "moves": {},
+            "kind": "shrine", "key": int(key), "hp": hp, "imp_dead": None, "moves": {},
         })
 
-    def normal_step(cx: int, cy: int, ang: str, key: bool, forward: bool):
-        """Step target from a normal node, or None. Entering shrine floor
-        spawns its warden at full health (the shrine keeps your key)."""
+    def normal_step(cx: int, cy: int, ang: str, key: bool, imp_dead: bool, forward: bool):
+        """Step target from a normal node, or None. Crossing into another
+        wing revives that wing's bug; entering shrine floor spawns the
+        OLDEST BUG at full strength."""
         dx, dy = DIRS[ang]
         if not forward:
             dx, dy = -dx, -dy
         tx, ty = cx + dx, cy + dy
         c = lvl.char(tx, ty)
         if c == "q":
-            return ("shrine", tx, ty, ang, SHRINE_HP[0], key)
-        if c in "KT" or not lvl.passable(tx, ty, key):
+            return ("shrine", tx, ty, ang, SHRINE_HP[0], key, False)
+        if c == "K" or not lvl.passable(tx, ty, key):
             return None
         if lvl.is_arena(tx, ty):
-            return ("arena", tx, ty, ang, ARENA_HP[0])
+            return ("arena", tx, ty, ang, ARENA_HP[0], True, False)
         new_key = key or (tx, ty) == lvl.key
-        return ("normal", tx, ty, ang, new_key)
+        fresh = lvl.zone(tx, ty) != lvl.zone(cx, cy)  # new wing: its bug is back
+        new_imp_dead = False if fresh or (tx, ty) == lvl.key else imp_dead
+        if lvl.zone(tx, ty) not in lvl.imps:
+            new_imp_dead = False
+        return ("normal", tx, ty, ang, new_key, new_imp_dead, new_key)
 
-    add_normal(*lvl.spawn, "N", False)
+    add_normal(*lvl.spawn, "N", False, False)
     while queue:
         nid = queue.popleft()
         if nid in seen:
@@ -97,8 +104,9 @@ def build_graph(lvl: Level) -> dict:
 
         if node["kind"] == "normal":
             key = bool(node["key"])
+            imp_dead = bool(node["imp_dead"]) if node["imp_dead"] is not None else False
             for token, forward in (("F", True), ("B", False)):
-                t = normal_step(cx, cy, ang, key, forward)
+                t = normal_step(cx, cy, ang, key, imp_dead, forward)
                 if t is None:
                     moves[token] = None
                 elif t[0] == "arena":
@@ -106,10 +114,13 @@ def build_graph(lvl: Level) -> dict:
                 elif t[0] == "shrine":
                     moves[token] = add_shrine(t[1], t[2], t[3], t[4], t[5])
                 else:
-                    moves[token] = add_normal(t[1], t[2], t[3], t[4])
-            moves["L"] = add_normal(cx, cy, LEFT[ang], key)
-            moves["R"] = add_normal(cx, cy, RIGHT[ang], key)
-            moves["X"] = nid  # dry fire
+                    moves[token] = add_normal(t[1], t[2], t[3], t[4], t[5])
+            moves["L"] = add_normal(cx, cy, LEFT[ang], key, imp_dead)
+            moves["R"] = add_normal(cx, cy, RIGHT[ang], key, imp_dead)
+            if lvl.imp_zone(cx, cy) and not imp_dead:
+                moves["X"] = add_normal(cx, cy, ang, key, True)  # blaster auto-aim: bug down
+            else:
+                moves["X"] = nid  # dry fire
 
         elif node["kind"] == "arena":
             hp = node["hp"]
@@ -121,7 +132,7 @@ def build_graph(lvl: Level) -> dict:
                 if lvl.is_arena(tx, ty):
                     moves[token] = add_arena(tx, ty, ang, hp)
                 elif lvl.passable(tx, ty, True):
-                    moves[token] = add_normal(tx, ty, ang, True)
+                    moves[token] = add_normal(tx, ty, ang, True, False)
                 else:
                     moves[token] = None
             moves["L"] = add_arena(cx, cy, LEFT[ang], hp)
@@ -141,17 +152,15 @@ def build_graph(lvl: Level) -> dict:
                 tx, ty = cx + dx, cy + dy
                 c = lvl.char(tx, ty)
                 if (tx, ty) in shrine.cells:
-                    if c in "KT" and hp > 0:
-                        moves[token] = None  # the warden guards it
+                    if c == "K" and hp > 0:
+                        moves[token] = None  # the oldest bug guards the key
                     elif c == "K":
                         # the pickup: take the key, back to the normal world
-                        moves[token] = add_normal(tx, ty, ang, True)
-                    elif c == "T":
-                        moves[token] = add_shrine(tx, ty, ang, hp, key)  # stand by the trophy
+                        moves[token] = add_normal(tx, ty, ang, True, False)
                     else:
                         moves[token] = add_shrine(tx, ty, ang, hp, key)
                 elif lvl.passable(tx, ty, key):
-                    moves[token] = add_normal(tx, ty, ang, key)  # leave, key kept
+                    moves[token] = add_normal(tx, ty, ang, key, False)  # leave, key kept
                 else:
                     moves[token] = None
             moves["L"] = add_shrine(cx, cy, LEFT[ang], hp, key)
@@ -167,7 +176,8 @@ def build_graph(lvl: Level) -> dict:
             if target and target != WIN and target not in seen:
                 queue.append(target)
 
-    nodes[WIN] = {"cell": None, "angle": None, "zone": "win", "kind": "win", "key": None, "hp": None, "moves": {}}
+    nodes[WIN] = {"cell": None, "angle": None, "zone": "win", "kind": "win",
+                  "key": None, "hp": None, "imp_dead": None, "moves": {}}
     return {
         "meta": {"name": "DETACHED HEAD", "level": "repo-01", "moves": list(MOVES)},
         "start": start,
@@ -208,17 +218,18 @@ def validate(graph: dict, lvl: Level) -> list[str]:
         if node["kind"] == "normal" and not node["key"] and node["cell"] == [gx, gy]:
             errors.append(f"{nid}: keyless node on the gate cell")
 
-    # shrine semantics: while a warden stands, no move enters the guarded cell
-    for cell, shrine in lvl.shrines.items():
-        anchor = [shrine.anchor[0], shrine.anchor[1]]
+    # shrine semantics: while the oldest bug stands, no move enters the key cell
+    key_shrine = lvl.shrines.get(lvl.key)
+    if key_shrine is not None:
+        anchor = [key_shrine.anchor[0], key_shrine.anchor[1]]
         for nid, node in nodes.items():
-            if node["kind"] != "shrine" or node["hp"] <= 0:
+            if node["kind"] != "shrine" or node["hp"] > 0:
                 continue
             for token, target in node["moves"].items():
                 if target and nodes[target]["cell"] == anchor and nodes[target]["kind"] == "shrine":
-                    errors.append(f"{nid}: walks onto guarded {shrine.name} anchor while warden stands")
+                    errors.append(f"{nid}: walks onto the key while the oldest bug stands")
 
-    # the key must be reachable: some cleared shrine node steps onto 'K'
+    # the key must be reachable: a cleared shrine node steps onto 'K'
     key_cell = [lvl.key[0], lvl.key[1]]
     key_reachable = any(
         node["kind"] == "shrine" and node["hp"] == 0
@@ -228,4 +239,17 @@ def validate(graph: dict, lvl: Level) -> list[str]:
     )
     if not key_reachable:
         errors.append("the golden key is never reachable")
+
+    # imp semantics: in a wing with a bug, X kills it exactly once per visit
+    for nid, node in nodes.items():
+        if node["kind"] != "normal" or not lvl.imp_zone(*node["cell"]):
+            continue
+        zone = lvl.zone(*node["cell"])
+        x_target = node["moves"]["X"]
+        if node["imp_dead"]:
+            if x_target != nid:
+                errors.append(f"{nid}: shooting a dead bug must be a dry fire")
+        else:
+            if x_target is None or not x_target.endswith("d"):
+                errors.append(f"{nid}: X in {zone} with a live bug must kill it")
     return errors

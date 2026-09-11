@@ -27,9 +27,9 @@ ZONES: dict[str, str] = {
     "arena": "prod",
 }
 
-FLOOR_CHARS = set("fhdkgrA@Knuvwp.GMqT")
+FLOOR_CHARS = set("fhdkgrA@Knuvwp.GMq")
 WALL_CHARS = set("#%~!")
-SHRINE_CHARS = set("qKT")  # shrine floor, the guarded key cell, trophy cells
+SHRINE_CHARS = set("qK")  # shrine floor and the guarded key cell
 
 # sprite char -> sprite kind (art.py keys)
 SPRITE_KINDS = {
@@ -65,7 +65,12 @@ class Level:
     boss: tuple[int, int] = (0, 0)
     sprites: list[tuple[int, int, str]] = field(default_factory=list)
     shrines: dict[tuple[int, int], Shrine] = field(default_factory=dict)  # cell -> shrine
+    imps: dict[str, tuple[int, int, str]] = field(default_factory=dict)  # zone -> (x, y, kind)
     _tex_cache: dict[tuple[int, int], str] = field(default_factory=dict, repr=False)
+
+    def imp_zone(self, x: int, y: int) -> str | None:
+        """The wing whose bug can be shot from this cell (None elsewhere)."""
+        return self.zone(x, y) if self.zone(x, y) in self.imps else None
 
     def char(self, x: int, y: int) -> str:
         if 0 <= x < self.width and 0 <= y < self.height:
@@ -173,7 +178,7 @@ def _discover_shrines(lvl: Level) -> None:
                 found.append(Shrine("the shrine of the key", comp, key_cells[0], "key"))
             elif trophy_cells:
                 found.append(Shrine("", comp, trophy_cells[0], "trophy"))
-    trophy_names = ["the shrine of the frozen sprint", "the shrine of the rewrite"]
+    trophy_names: list[str] = []
     trophy_idx = 0
     found.sort(key=lambda s: (s.anchor[1], s.anchor[0]))
     for shrine in found:
@@ -206,10 +211,13 @@ def load(path) -> Level:
                 lvl.boss = (x, y)
                 lvl.sprites.append((x, y, "boss"))
     _discover_shrines(lvl)
+    for x, y, kind in lvl.sprites:
+        if kind.startswith("bug"):
+            lvl.imps[lvl.zone(x, y)] = (x, y, kind)
     return lvl
 
 
 def visible_sprites(lvl: Level, key: bool) -> list[tuple[int, int, str]]:
-    """Static world sprites for a frame (bugs; the boss, wardens, key and
-    trophies are placed by the arena/shrine renderers)."""
+    """Static world sprites for a frame (bugs; the boss, the oldest bug, the
+    key and corpses are placed by the arena/shrine/imp renderers)."""
     return [s for s in lvl.sprites if s[2].startswith("bug")]

@@ -23,21 +23,31 @@ def _init_worker(map_path: str) -> None:
 
 
 def _render_job(job: tuple) -> str:
-    nid, cx, cy, ang, key, hp, kind, out_path, fmt = job
+    nid, cx, cy, ang, key, hp, kind, imp_dead, out_path, fmt = job
     lvl = _R.lvl
-    sprites = visible_sprites(lvl, bool(key))
     bar = None
+    sprites = []
     if kind == "arena":
         sprites = [(*lvl.boss, "boss" if hp == 4 else f"boss{hp}")]
         bar = ("THE DEBT", hp, 4)
     elif kind == "shrine":
+        sprites = [s for s in visible_sprites(lvl, False) if s[0] not in {lvl.key[0]}]
         shrine = lvl.shrine_at(cx, cy)
         ax, ay = shrine.anchor
         if hp > 0:
-            sprites.append((ax, ay, "warden2" if hp == 2 else "warden1"))
-            bar = ("THE WARDEN", hp, 2)
+            sprites.append((ax, ay, f"ancient{hp}"))
+            bar = ("THE OLDEST BUG", hp, 3)
         else:
-            sprites.append((ax, ay, "key" if shrine.kind == "key" else "trophy"))
+            sprites.append((ax, ay, "key"))
+    else:
+        zone = lvl.zone(cx, cy)
+        for sx, sy, sk in visible_sprites(lvl, bool(key)):
+            if lvl.zone(sx, sy) == zone and imp_dead:
+                continue  # this wing's bug is down; a corpse lies below
+            sprites.append((sx, sy, sk))
+        if imp_dead:
+            ix, iy, ik = lvl.imps[zone]
+            sprites.append((ix, iy, f"{ik}_dead"))
     img = _R.frame(cx, cy, ang, key=bool(key), sprites=sprites, bar=bar)
     if fmt == "webp":
         img.save(out_path, "WEBP", quality=82, method=4)
@@ -79,7 +89,7 @@ def main(argv: list[str] | None = None) -> int:
 
     todo = [
         (nid, n["cell"][0], n["cell"][1], n["angle"], n["key"], n["hp"], n["kind"],
-         assets / f"{nid}.{fmt}", fmt)
+         bool(n["imp_dead"]), assets / f"{nid}.{fmt}", fmt)
         for nid, n in graph["nodes"].items()
         if n["kind"] != "win"
     ]

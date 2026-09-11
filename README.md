@@ -9,25 +9,26 @@
 ---
 
 You fell asleep at your desk and woke up **inside a repository** — a dungeon
-made of code, frozen creatures and half-remembered decisions.
+made of code, frozen half-remembered decisions, and bugs.
 
-Your way out needs three kills and a key. **Three wardens** patrol the wings:
-one guards the **golden key**, two guard old trophies in dead-end shrines.
-Each takes two hits — and each returns to full strength if you flee its
-shrine. The key opens **the gate**, and behind the gate waits **THE DEBT**:
-the ancient thing that has been growing in the dark since 2009, grinning,
-with a burning `$` in its chest. It takes four hits. It does not stay dead
-if you run.
+The little **bugs** squatting in every wing die to one shot of your blaster
+— and always crawl back by the time you return. It's a legacy codebase;
+that's what the bugs do. Your way home needs three things:
 
-Slay the wardens. Take the key. Open the gate. End THE DEBT. Then you can
-go home.
+1. **THE OLDEST BUG** hunches over the golden key in its shrine. Three hits.
+   Then the key is yours.
+2. **The gate** — it only opens for the key.
+3. **THE DEBT** behind the gate: the ancient thing growing in the dark since
+   2009, grinning, with a burning `$` in its chest. Four hits. It does not
+   stay down if you run.
+
+Slay the oldest bug. Take the key. Open the gate. End THE DEBT. Go home.
 
 *(Devs: yes, the wings are branches, the walls are logs and merge conflicts,
 and the victory screen credits `git blame` as the cleanup crew. That layer
-is yours. Everyone else gets a dungeon, wardens, a key, a gate and a
-monster.)*
+is yours. Everyone else gets a dungeon, bugs, a key, a gate and a monster.)*
 
-<p align="center"><img src="assets/x20y21N.webp" width="46%" alt="spawn · branch main"><img src="assets/x06y12W.webp" width="46%" alt="the shrine of the key · warden ahead"></p>
+<p align="center"><img src="assets/x20y21N.webp" width="46%" alt="spawn · branch main"><img src="assets/x06y12W.webp" width="46%" alt="the shrine of the key · THE OLDEST BUG"></p>
 <p align="center"><img src="assets/x20y11N.webp" width="46%" alt="the gate · locked"><img src="assets/x20y05Nh4.webp" width="46%" alt="THE DEBT · behind the gate"></p>
 
 ## How to play
@@ -39,9 +40,10 @@ Every screen is one markdown file. One click = one move.
 | ⬆️ | step forward | | ⬅️ / ➡️ | turn left / right |
 | ⬇️ | step back | | 💥 | fire |
 
-🔑 The key picks itself up when you walk into it — once its warden is down.
-🚫 ⛔️ means a wall, a locked gate, or a warden still standing his ground.
-⚔ Wardens and THE DEBT regenerate if you flee their chamber and come back.
+🐛 Bugs die to one 💥 anywhere in their wing (the blaster auto-aims) —
+but they regenerate the moment you leave. It's a legacy codebase.
+🔑 The key picks itself up once the OLDEST BUG is down.
+🚫 ⛔️ means a wall, a locked gate, or the oldest bug still standing his ground.
 
 **This is turn-based by nature.** Every click is a page load on github.com —
 the repository chrome blinks, then your new frame arrives. That is not a bug
@@ -54,7 +56,7 @@ not like Quake. (There is also no sound. The repo is very quiet.)
 
 ## How this works (no, there is no engine)
 
-- The whole game is **4225 markdown files** hyperlinked into a stateless graph: one file per (position × facing × world state).
+- The whole game is **7345 markdown files** hyperlinked into a stateless graph: one file per (position × facing × world state).
 - Walls are **missing links**. The boss has health because its HP lives only inside the arena sub-graph — that trick is why this game can do things a "Doom in a README" cannot.
 - Frames are raycast-rendered by a ~100%-numpy Wolfenstein-style renderer, with procedurally generated textures, sprites, HUD and minimap. Zero external assets.
 - Speedruns: open an issue `/run FFRRX...` and a GitHub Action replays your route over `data/graph.json`. See [LEADERBOARD.md](LEADERBOARD.md).

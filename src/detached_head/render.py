@@ -25,21 +25,22 @@ ANGLE = {"N": -math.pi / 2, "E": 0.0, "S": math.pi / 2, "W": math.pi}
 # scale = sprite height as a fraction of wall height; vshift anchors sprites
 # on the floor: vshift = 0.5 - scale/2 puts the sprite bottom on the floor line
 SPRITE_SCALE = {
-    "key": 0.5, "trophy": 0.62,
-    "warden2": 1.05, "warden1": 1.05,
+    "key": 0.5,
+    "ancient3": 1.15, "ancient2": 1.15, "ancient1": 1.15,
     "boss": 1.75, "boss3": 1.75, "boss2": 1.75, "boss1": 1.75,
 }
 SPRITE_VSHIFT = {
     "key": 0.12,
-    "trophy": 0.5 - 0.62 / 2,
-    "warden2": 0.5 - 1.05 / 2, "warden1": 0.5 - 1.05 / 2,
+    "ancient3": 0.5 - 1.15 / 2, "ancient2": 0.5 - 1.15 / 2, "ancient1": 0.5 - 1.15 / 2,
     "boss": 0.5 - 1.75 / 2, "boss3": 0.5 - 1.75 / 2, "boss2": 0.5 - 1.75 / 2, "boss1": 0.5 - 1.75 / 2,
 }
 
 
 def _bug_scale(kind: str) -> tuple[float, float]:
-    if kind.startswith("bug"):
-        return 0.55, 0.5 - 0.55 / 2
+    if kind.startswith("bug") and not kind.endswith("_dead"):
+        return 0.62, 0.5 - 0.62 / 2
+    if kind.endswith("_dead"):
+        return 0.5, 0.5 - 0.5 / 2 + 0.08  # corpses lie flat on the floor
     return SPRITE_SCALE.get(kind, 0.6), SPRITE_VSHIFT.get(kind, 0.0)
 
 
@@ -275,16 +276,35 @@ class Renderer:
         frame.paste(mimg, (mx, my))
         d.rectangle([mx - 1, my - 1, mx + mw, my + mh], outline=(48, 54, 61))
 
-        # the gun: plain pixel blaster, dead center, iron sight instead of text
-        gun = Image.new("RGBA", (72, 30), (0, 0, 0, 0))
+        # the blaster, seen from behind: barrel going away from you, two
+        # hands on the grip. A gun must read as a gun.
+        gun = Image.new("RGBA", (76, 62), (0, 0, 0, 0))
         gd = ImageDraw.Draw(gun)
-        gd.rectangle([14, 4, 66, 22], fill=(58, 66, 77), outline=(88, 99, 112))
-        gd.rectangle([40, 8, 71, 13], fill=(44, 51, 60))
-        gd.rectangle([18, 17, 34, 29], fill=(48, 55, 65))
-        gd.rectangle([46, 6, 51, 8], fill=art.GREEN)
-        gd.rectangle([52, 2, 56, 5], fill=(120, 130, 142))  # iron sight
-        gun_big = gun.resize((72 * 6, 30 * 6), Image.NEAREST)
-        frame.paste(gun_big, ((W - 72 * 6) // 2, H - 30 * 6 + 12), gun_big)
+        metal = (58, 66, 77)
+        metal_dark = (36, 42, 50)
+        metal_edge = (100, 112, 126)
+        # barrel tube pointing away (up), with a dark bore at the top
+        gd.rounded_rectangle([29, 0, 47, 30], 8, fill=metal, outline=metal_edge)
+        gd.ellipse([33, 3, 43, 13], fill=(8, 10, 13), outline=metal_dark)
+        gd.arc([33, 3, 43, 13], 180, 360, fill=metal_edge)
+        # slide/receiver, widening toward the player
+        gd.polygon([(24, 28), (52, 28), (58, 44), (18, 44)], fill=metal, outline=metal_edge)
+        gd.rectangle([24, 32, 52, 34], fill=metal_dark)  # ejection port
+        gd.rectangle([34, 22, 42, 25], fill=art.GREEN)  # charge LED
+        # rear sight wings
+        gd.rectangle([18, 44, 26, 50], fill=(74, 84, 96), outline=metal_edge)
+        gd.rectangle([50, 44, 58, 50], fill=(74, 84, 96), outline=metal_edge)
+        # hands wrapping the grip (olive gloves, knuckle shading)
+        hand = (128, 106, 76)
+        hand_edge = (86, 70, 48)
+        gd.rounded_rectangle([4, 40, 36, 62], 8, fill=hand, outline=hand_edge)
+        gd.rounded_rectangle([40, 40, 72, 62], 8, fill=hand, outline=hand_edge)
+        gd.rectangle([10, 46, 30, 54], fill=(108, 88, 62))
+        gd.rectangle([46, 46, 66, 54], fill=(108, 88, 62))
+        for hx in (14, 22, 28, 50, 58, 64):  # knuckles
+            gd.ellipse([hx, 44, hx + 4, 48], fill=(150, 126, 92))
+        gun_big = gun.resize((76 * 5, 62 * 5), Image.NEAREST)
+        frame.paste(gun_big, ((W - 76 * 5) // 2, H - 62 * 5 + 18), gun_big)
 
         # key slot, bottom-right
         box_w = 210

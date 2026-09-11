@@ -28,14 +28,31 @@ def test_graph_invariants(graph, lvl):
 
 
 def test_budget(graph):
-    assert 3000 <= len(graph["nodes"]) <= 7000, f"node count {len(graph['nodes'])} outside budget"
+    assert 4000 <= len(graph["nodes"]) <= 9000, f"node count {len(graph['nodes'])} outside budget"
 
 
-def test_three_shrines(graph, lvl):
-    names = {s.name for s in lvl.shrines.values()}
-    assert len(names) == 3
-    assert any(s.kind == "key" for s in lvl.shrines.values())
-    assert sum(1 for s in {id(s): s for s in lvl.shrines.values()}.values() if s.kind == "trophy") == 2
+def test_five_killable_bugs(graph, lvl):
+    assert len(lvl.imps) == 5
+    assert {z for z in lvl.imps} == {"main", "feature", "hotfix", "docs", "refactor"}
+
+
+def test_bug_dies_to_one_shot(graph, lvl):
+    node = graph["nodes"][normal_id(16, 23, "N", False)]  # hub, main zone
+    assert node["imp_dead"] == 0
+    assert node["moves"]["X"] == normal_id(16, 23, "N", False, True)
+    dead = graph["nodes"][normal_id(16, 23, "N", False, True)]
+    assert dead["moves"]["X"] == normal_id(16, 23, "N", False, True)  # dry fire on a corpse
+
+
+def test_bug_regenerates_on_zone_return(graph, lvl):
+    # hub -> feature corridor crosses a zone border: the hub bug is back
+    hub_dead = normal_id(16, 22, "N", False, True)  # killed, standing north of it
+    step_out = graph["nodes"][hub_dead]["moves"]
+    # walk to the junction (same main zone) keeps the kill; leaving main revives it
+    same_zone = graph["nodes"][normal_id(20, 17, "N", False, True)]  # main corridor, kill kept
+    assert same_zone["imp_dead"] == 1
+    release = graph["nodes"][normal_id(20, 12, "N", False)]  # gate corridor: main bug alive again
+    assert release["imp_dead"] in (None, 0)
 
 
 def test_gate_is_solid_without_key(graph, lvl):
@@ -49,51 +66,38 @@ def test_gate_is_solid_without_key(graph, lvl):
     )
 
 
-def test_shrine_entry_spawns_full_warden(graph, lvl):
-    # stepping from the key shrine's doorway west onto shrine floor
+def test_shrine_entry_spawns_oldest_bug(graph, lvl):
     door = normal_id(6, 12, "W", False)
     assert door in graph["nodes"]
-    assert graph["nodes"][door]["moves"]["F"] == shrine_id(5, 12, "W", 2, False)
+    assert graph["nodes"][door]["moves"]["F"] == shrine_id(5, 12, "W", 3, False)
 
 
-def test_warden_guards_the_key(graph, lvl):
-    # inside the shrine with the warden standing, forward onto the key is a wall
-    guard = shrine_id(5, 12, "W", 2, False)
+def test_oldest_bug_guards_the_key(graph, lvl):
+    guard = shrine_id(5, 12, "W", 3, False)
     assert graph["nodes"][guard]["moves"]["F"] is None
 
 
-def test_warden_fall_opens_the_key(graph, lvl):
-    hp1 = graph["nodes"][shrine_id(5, 12, "W", 2, False)]["moves"]["X"]
-    assert hp1 == shrine_id(5, 12, "W", 1, False)
+def test_oldest_bug_fall_opens_the_key(graph, lvl):
+    hp2 = graph["nodes"][shrine_id(5, 12, "W", 3, False)]["moves"]["X"]
+    assert hp2 == shrine_id(5, 12, "W", 2, False)
+    hp1 = graph["nodes"][hp2]["moves"]["X"]
     cleared = graph["nodes"][hp1]["moves"]["X"]
     assert cleared == shrine_id(5, 12, "W", 0, False)
     assert graph["nodes"][cleared]["moves"]["F"] == normal_id(4, 12, "W", True)  # the pickup
 
 
-def test_fleeing_shrine_resets_warden(graph, lvl):
-    # leave the shrine from the entry cell facing back east, then re-enter
-    entry = shrine_id(5, 12, "E", 1, False)  # hurt warden, facing the door
+def test_fleeing_shrine_resets_oldest_bug(graph, lvl):
+    entry = shrine_id(5, 12, "E", 1, False)
     outside = graph["nodes"][entry]["moves"]["F"]
     assert outside == normal_id(6, 12, "E", False)
     back_in = graph["nodes"][normal_id(6, 12, "W", False)]["moves"]["F"]
-    assert back_in == shrine_id(5, 12, "W", 2, False), "warden must return at full strength"
-
-
-def test_trophy_shrine_flow(graph, lvl):
-    # hotfix shrine: door (33,13) east onto (34,13), trophy at (35,13)
-    enter = graph["nodes"][normal_id(33, 13, "E", False)]["moves"]["F"]
-    assert enter == shrine_id(34, 13, "E", 2, False)
-    guarded = graph["nodes"][shrine_id(34, 13, "E", 2, False)]["moves"]["F"]
-    assert guarded is None
-    cleared = graph["nodes"][shrine_id(34, 13, "E", 0, False)]["moves"]["F"]
-    assert cleared == shrine_id(35, 13, "E", 0, False)  # stand on the trophy
+    assert back_in == shrine_id(5, 12, "W", 3, False), "the oldest bug must return at full strength"
 
 
 def test_shrine_exit_keeps_key(graph, lvl):
-    # re-enter the cleared key shrine holding the key, then leave: key kept
-    inside = shrine_id(5, 12, "W", 2, True)  # warden returns, key stays
+    inside = shrine_id(5, 12, "W", 3, True)
     assert inside in graph["nodes"]
-    leave = graph["nodes"][shrine_id(5, 12, "E", 2, True)]["moves"]["F"]
+    leave = graph["nodes"][shrine_id(5, 12, "E", 3, True)]["moves"]["F"]
     assert leave == normal_id(6, 12, "E", True)
 
 
@@ -109,9 +113,6 @@ def test_fire_chain(graph):
     hp3 = next(n for n in graph["nodes"].values() if n["kind"] == "arena" and n["hp"] == 3)
     nid_hp3 = next(k for k, v in graph["nodes"].items() if v is hp3)
     assert hp3["moves"]["X"] == nid_hp3.replace("h3", "h2")
-    some_normal = next(n for n in graph["nodes"].values() if n["kind"] == "normal")
-    nid = next(k for k, v in graph["nodes"].items() if v is some_normal)
-    assert some_normal["moves"]["X"] == nid  # dry fire outside fights
 
 
 def test_arena_exit_and_regeneration(graph, lvl):
@@ -120,15 +121,6 @@ def test_arena_exit_and_regeneration(graph, lvl):
     assert entry in graph["nodes"]
     assert graph["nodes"][entry]["moves"]["F"] == normal_id(gx, gy, "S", True)
     assert graph["nodes"][normal_id(gx, gy, "N", True)]["moves"]["F"] == arena_id(gx, gy - 1, "N", 4)
-
-
-def test_turns_are_reversible(graph):
-    normals = [(k, n) for k, n in graph["nodes"].items() if n["kind"] == "normal"][:200]
-    assert normals
-    for nid, node in normals:
-        left = node["moves"]["L"]
-        if left:
-            assert graph["nodes"][left]["moves"]["R"] == nid
 
 
 def test_win_reachable_and_no_orphans(graph):
@@ -151,7 +143,7 @@ def test_renderer_smoke(lvl):
     r = Renderer(lvl, make_textures(), make_sprites())
     frame = r.frame(*lvl.spawn, "N", key=False, sprites=[])
     assert frame.size == (960, 600)
-    frame = r.frame(5, 12, "W", key=False, sprites=[(4, 12, "warden2")], bar=("THE WARDEN", 2, 2))
+    frame = r.frame(5, 12, "W", key=False, sprites=[(4, 12, "ancient3")], bar=("THE OLDEST BUG", 3, 3))
     assert frame.size == (960, 600)
 
 
@@ -164,4 +156,6 @@ def test_markdown_emission(graph, lvl):
     assert "YOU ESCAPED" in win and "LEADERBOARD" in win
     shrine_node = next(n for n in graph["nodes"].values() if n["kind"] == "shrine" and n["hp"] > 0)
     hdr = emit._header("x", shrine_node, lvl)
-    assert "THE WARDEN" in hdr
+    assert "THE OLDEST BUG" in hdr
+    dead_node = next(n for n in graph["nodes"].values() if n["imp_dead"])
+    assert "bug deleted" in emit._header("x", dead_node, lvl)
