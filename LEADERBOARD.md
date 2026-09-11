@@ -21,5 +21,6 @@ One best result per player.
 
 <!-- LEADERBOARD:BEGIN -->
 | # | Player | Clicks | Date |
-|---|--------|--------|------|
+|---|---|---|---|
+| 1 | sup3dev | 62 | 2026-09-11 |
 <!-- LEADERBOARD:END -->
