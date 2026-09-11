@@ -180,4 +180,4 @@ def test_rebuild_preserves_leaderboard_rows(tmp_path):
     emit_leaderboard(tmp_path)  # a rebuild must not wipe the CI-written row
     text = board.read_text(encoding="utf-8")
     assert "| someone | 58 |" in text
-    assert "Shortest-route leaderboard" in text  # while still refreshing the copy
+    assert "Leaderboards" in text and "bugs%" in text  # copy refreshed, categories intact
