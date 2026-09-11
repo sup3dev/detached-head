@@ -13,9 +13,9 @@ EMOJI = {"F": "\u2b06\ufe0f", "B": "\u2b07\ufe0f", "L": "\u2b05\ufe0f", "R": "\u
 # frames shown on the front page (id, caption)
 TEASERS = [
     ("x20y21N", "spawn \u00b7 branch main"),
-    ("x06y12W", "the LGTM key \u00b7 feature/dark-mode"),
-    ("x20y11N", "the merge gate \u00b7 locked"),
-    ("x20y05Nh4", "LEGACY MONOLITH \u00b7 prod"),
+    ("x06y12W", "the golden key \u00b7 feature/dark-mode"),
+    ("x20y11N", "the gate \u00b7 locked"),
+    ("x20y05Nh4", "THE DEBT \u00b7 prod"),
 ]
 
 
@@ -28,8 +28,8 @@ def _header(nid: str, node: dict, lvl: Level) -> str:
     facing = f"facing {node['angle']}"
     if node["kind"] == "arena":
         bar = "\u2588" * node["hp"] + "\u2591" * (4 - node["hp"])
-        return f"### `branch: prod` \u00b7 {pos} \u00b7 {facing} \u00b7 \u2694 monolith [{bar} {node['hp']}/4]"
-    key = "\U0001f511 LGTM" if node["key"] else "\U0001f511 \u2014"
+        return f"### `branch: prod` \u00b7 {pos} \u00b7 {facing} \u00b7 \u2694 THE DEBT [{bar} {node['hp']}/4]"
+    key = "\U0001f511 THE KEY" if node["key"] else "\U0001f511 \u2014"
     return f"### `branch: {branch}` \u00b7 {pos} \u00b7 {facing} \u00b7 {key}"
 
 
@@ -65,16 +65,16 @@ def _link(target: str | None, token: str) -> str:
 
 def win_md(fmt: str = "webp") -> str:
     return f"""<!-- node:WIN -->
-### `branch: prod` \u00b7 deploy pipeline \u00b7 all checks passed
+### `branch: prod` \u00b7 the way out \u00b7 all checks passed
 
 ![victory](../assets/win.{fmt})
 
-# \u2714 DEPLOYED
+# \u2714 YOU ESCAPED
 
-The **LEGACY MONOLITH** is deleted. The build is green, the tests pass,
-the merge is in. You may go home now.
+**THE DEBT** is deleted. The build is green, the tests pass, the way home is
+open. You may go home now.
 
-\U0001f3c6 Think you can delete it faster? Submit a speedrun:
+\U0001f3c6 Think you can escape faster? Submit a speedrun:
 open an issue titled `/run FFRRRF...` with your route \u2014 see
 [LEADERBOARD.md](../LEADERBOARD.md).
 
@@ -103,7 +103,7 @@ def emit_leaderboard(root: Path) -> None:
 
 LEADERBOARD_MD = """# \U0001f3c1 Speedrun leaderboard
 
-Fastest deletion of the **LEGACY MONOLITH**, measured in clicks.
+Fastest escape and slaying of **THE DEBT**, measured in clicks.
 
 Submit a run by opening an issue titled `/run FFRRFX...` where the letters
 are your moves (`F` forward, `B` back, `L`/`R` turn, `X` fire). A GitHub
@@ -141,13 +141,17 @@ def emit_readme(graph: dict, lvl: Level, root: Path, fmt: str = "webp") -> None:
 
 ---
 
-You fell asleep during a deploy and woke up **inside your own repository**.
-The branches are corridors. The bugs are frozen where the sprints left them.
-Somewhere in `feature/dark-mode` an approval is still warm: the **LGTM key**.
-It opens the merge gate to `prod` \u2014 where the **LEGACY MONOLITH**, ten
-thousand lines of it, is still holding the whole company hostage.
+You fell asleep at your desk and woke up **inside a repository** \u2014 a dungeon
+made of code, frozen creatures and half-remembered decisions. Somewhere in
+the dark wing a **golden key** is still warm. It opens **the gate** \u2014 and
+behind the gate waits **THE DEBT**: the ancient thing that has been growing
+in the dark since 2009, grinning, with a burning `$` in its chest.
 
-Find the key. Open the gate. Delete the monolith.
+Find the key. Open the gate. Slay THE DEBT. Then you can go home.
+
+*(Devs: yes, the wings are branches, the walls are logs and merge conflicts,
+and the gun says `blame` on the barrel. That layer is yours. Everyone else
+gets a dungeon, a key, a gate and a monster.)*
 
 {teasers}
 
@@ -158,11 +162,11 @@ Every screen is one markdown file. One click = one move.
 | click | move | | click | move |
 |---|---|---|---|---|
 | \u2b06\ufe0f | step forward | | \u2b05\ufe0f / \u27a1\ufe0f | turn left / right |
-| \u2b07\ufe0f | step back | | \U0001F4A5 | fire `git blame` |
+| \u2b07\ufe0f | step back | | \U0001F4A5 | fire |
 
 \U0001f511 The key picks itself up when you walk into it.
 \U0001f6ab \u26d4\ufe0f means a wall (or a locked gate).
-\u2694 The monolith regenerates if you flee the arena and come back.
+\u2694 THE DEBT grows back if you flee the arena and return.
 
 **This is turn-based by nature.** Every click is a page load on github.com \u2014
 the repository chrome blinks, then your new frame arrives. That is not a bug

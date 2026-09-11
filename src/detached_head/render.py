@@ -239,13 +239,21 @@ class Renderer:
                 pass
             else:
                 md.point((sx * cell + cell // 2, sy * cell + cell // 2), fill=(200, 80, 70))
-        # player arrow
+        # player: view cone + arrow (the cone makes the facing obvious)
         ddx_, ddy_ = DIRS[ang]
         cxs, cys = cx * cell + cell // 2, cy * cell + cell // 2
+        perp_ = (-ddy_, ddx_)
+        reach = cell * 5
+        cone = [
+            (cxs + ddx_ * reach + (perp_[0] + ddx_) * cell, cys + ddy_ * reach + (perp_[1] + ddy_) * cell),
+            (cxs + ddx_ * (reach + cell), cys + ddy_ * (reach + cell)),
+            (cxs + ddx_ * reach + (-perp_[0] + ddx_) * cell, cys + ddy_ * reach + (-perp_[1] + ddy_) * cell),
+        ]
+        md.polygon([(cxs, cys), *cone], fill=(63, 185, 80, 70))
         md.polygon(
-            [(cxs + ddx_ * 4 - ddy_ * 2, cys + ddy_ * 4 - ddx_ * 2),
-             (cxs + ddx_ * 4 + ddy_ * 2, cys + ddy_ * 4 + ddx_ * 2),
-             (cxs - ddx_ * 2, cys - ddy_ * 2)],
+            [(cxs + ddx_ * 6 - ddy_ * 3, cys + ddy_ * 6 - ddx_ * 3),
+             (cxs + ddx_ * 6 + ddy_ * 3, cys + ddy_ * 6 + ddx_ * 3),
+             (cxs - ddx_ * 3, cys - ddy_ * 3)],
             fill=(63, 185, 80),
         )
         mx, my = 16, H - mh - 16
@@ -260,26 +268,26 @@ class Renderer:
         gd.rectangle([18, 17, 34, 29], fill=(48, 55, 65))  # grip
         gd.rectangle([46, 6, 51, 8], fill=art.GREEN)  # LED
         gd.text((22, 10), "blame", font=art._font(10, bold=True), fill=(140, 220, 150))
-        gun_big = gun.resize((72 * 7, 30 * 7), Image.NEAREST)
-        frame.paste(gun_big, (W // 2 + 30, H - 30 * 7 + 14), gun_big)
+        gun_big = gun.resize((72 * 6, 30 * 6), Image.NEAREST)
+        frame.paste(gun_big, (W // 2 - 60, H - 30 * 6 + 12), gun_big)
 
         # key slot, bottom-right
         box_w = 210
         d.rounded_rectangle([W - box_w - 16, H - 56, W - 16, H - 16], 8,
                             fill=(13, 17, 23, 235), outline=(48, 54, 61))
         if key:
-            badge = self.sprites["key"].resize((36, 36), Image.NEAREST)
-            frame.paste(badge, (W - box_w - 4, H - 52), badge)
-            d.text((W - box_w + 44, H - 44), "LGTM key", font=self.font_hud, fill=art.GREEN)
+            badge = self.sprites["key"].resize((40, 46), Image.NEAREST)
+            frame.paste(badge, (W - box_w + 2, H - 54), badge)
+            d.text((W - box_w + 52, H - 44), "THE KEY", font=self.font_hud, fill=art.GREEN)
         else:
-            d.text((W - box_w + 12, H - 44), "key: --", font=self.font_hud, fill=(90, 98, 106))
+            d.text((W - box_w + 12, H - 44), "no key", font=self.font_hud, fill=(90, 98, 106))
 
         # boss bar, arena frames only
         if hp is not None:
             bw, bh = 460, 44
             bx, by = (W - bw) // 2, 14
             d.rounded_rectangle([bx, by, bx + bw, by + bh], 8, fill=(13, 17, 23, 235), outline=art.RED)
-            d.text((W // 2, by + 12), "LEGACY MONOLITH", font=self.font_bar, fill=art.RED, anchor="ma")
+            d.text((W // 2, by + 12), "THE DEBT", font=self.font_bar, fill=art.RED, anchor="ma")
             seg_w = (bw - 40 - 9 * 3) // 4
             for i in range(4):
                 sx0 = bx + 20 + i * (seg_w + 3)

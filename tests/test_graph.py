@@ -111,4 +111,4 @@ def test_markdown_emission(graph, lvl):
     assert f"![frame](../assets/{nid}.webp)" in md
     assert "[\u2302 index](../README.md)" in md
     win = emit.win_md()
-    assert "DEPLOYED" in win and "LEADERBOARD" in win
+    assert "YOU ESCAPED" in win and "LEADERBOARD" in win

@@ -8,16 +8,20 @@
 
 ---
 
-You fell asleep during a deploy and woke up **inside your own repository**.
-The branches are corridors. The bugs are frozen where the sprints left them.
-Somewhere in `feature/dark-mode` an approval is still warm: the **LGTM key**.
-It opens the merge gate to `prod` — where the **LEGACY MONOLITH**, ten
-thousand lines of it, is still holding the whole company hostage.
+You fell asleep at your desk and woke up **inside a repository** — a dungeon
+made of code, frozen creatures and half-remembered decisions. Somewhere in
+the dark wing a **golden key** is still warm. It opens **the gate** — and
+behind the gate waits **THE DEBT**: the ancient thing that has been growing
+in the dark since 2009, grinning, with a burning `$` in its chest.
 
-Find the key. Open the gate. Delete the monolith.
+Find the key. Open the gate. Slay THE DEBT. Then you can go home.
 
-<p align="center"><img src="assets/x20y21N.webp" width="46%" alt="spawn · branch main"><img src="assets/x06y12W.webp" width="46%" alt="the LGTM key · feature/dark-mode"></p>
-<p align="center"><img src="assets/x20y11N.webp" width="46%" alt="the merge gate · locked"><img src="assets/x20y05Nh4.webp" width="46%" alt="LEGACY MONOLITH · prod"></p>
+*(Devs: yes, the wings are branches, the walls are logs and merge conflicts,
+and the gun says `blame` on the barrel. That layer is yours. Everyone else
+gets a dungeon, a key, a gate and a monster.)*
+
+<p align="center"><img src="assets/x20y21N.webp" width="46%" alt="spawn · branch main"><img src="assets/x06y12W.webp" width="46%" alt="the golden key · feature/dark-mode"></p>
+<p align="center"><img src="assets/x20y11N.webp" width="46%" alt="the gate · locked"><img src="assets/x20y05Nh4.webp" width="46%" alt="THE DEBT · prod"></p>
 
 ## How to play
 
@@ -26,11 +30,11 @@ Every screen is one markdown file. One click = one move.
 | click | move | | click | move |
 |---|---|---|---|---|
 | ⬆️ | step forward | | ⬅️ / ➡️ | turn left / right |
-| ⬇️ | step back | | 💥 | fire `git blame` |
+| ⬇️ | step back | | 💥 | fire |
 
 🔑 The key picks itself up when you walk into it.
 🚫 ⛔️ means a wall (or a locked gate).
-⚔ The monolith regenerates if you flee the arena and come back.
+⚔ THE DEBT grows back if you flee the arena and return.
 
 **This is turn-based by nature.** Every click is a page load on github.com —
 the repository chrome blinks, then your new frame arrives. That is not a bug

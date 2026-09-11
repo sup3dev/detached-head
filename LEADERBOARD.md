@@ -1,6 +1,6 @@
 # 🏁 Speedrun leaderboard
 
-Fastest deletion of the **LEGACY MONOLITH**, measured in clicks.
+Fastest escape and slaying of **THE DEBT**, measured in clicks.
 
 Submit a run by opening an issue titled `/run FFRRFX...` where the letters
 are your moves (`F` forward, `B` back, `L`/`R` turn, `X` fire). A GitHub

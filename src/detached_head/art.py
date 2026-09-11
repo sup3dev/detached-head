@@ -113,27 +113,32 @@ def tex_conflict() -> Image.Image:
 
 
 def tex_gate_wall() -> Image.Image:
-    img = _img(TEX, TEX, (16, 14, 8, 255))
+    """A barred portcullis with a padlock: reads as 'locked door' in any language."""
+    img = _img(TEX, TEX, (20, 18, 14, 255))
     d = ImageDraw.Draw(img)
-    f = _font(8, bold=True)
-    d.rectangle([0, 0, TEX - 1, TEX - 1], outline=AMBER + (255,))
-    d.rectangle([22, 18, 41, 37], fill=(60, 44, 12, 255), outline=AMBER + (255,), width=2)  # padlock body
-    d.arc([26, 6, 37, 20], 180, 360, fill=AMBER + (255,), width=3)  # shackle
-    d.ellipse([29, 25, 34, 30], fill=AMBER + (255,))
-    d.text((8, 44), "PROTECTED", font=f, fill=AMBER + (255,))
+    d.rectangle([0, 0, TEX - 1, TEX - 1], outline=(60, 44, 24, 255), width=3)  # stone frame
+    for x in range(10, TEX - 8, 8):  # iron bars
+        d.rectangle([x, 6, x + 3, TEX - 7], fill=(70, 62, 52, 255))
+        d.rectangle([x, 6, x + 3, TEX - 7], outline=(30, 26, 22, 255))
+    for y in (18, 44):  # cross bars
+        d.rectangle([6, y, TEX - 7, y + 3], fill=(60, 54, 46, 255))
+    d.rounded_rectangle([22, 22, 41, 41], 4, fill=(60, 44, 12, 255), outline=(247, 197, 66, 255), width=2)  # padlock
+    d.arc([26, 10, 37, 24], 180, 360, fill=(247, 197, 66, 255), width=3)
+    d.ellipse([29, 29, 34, 34], fill=(247, 197, 66, 255))
     return img
 
 
 def tex_gate_open() -> Image.Image:
-    """The merge gate, seen open once the LGTM key is held."""
-    img = _img(TEX, TEX, (5, 8, 5, 255))
+    """The same portcullis, raised: bars gone, warm light behind, way is open."""
+    img = _img(TEX, TEX, (8, 10, 6, 255))
     d = ImageDraw.Draw(img)
-    d.rectangle([0, 0, 9, TEX - 1], fill=GREEN + (255,))
-    d.rectangle([TEX - 10, 0, TEX - 1, TEX - 1], fill=GREEN + (255,))
-    d.rectangle([0, 0, TEX - 1, 6], fill=GREEN + (255,))
-    f = _font(9, bold=True)
-    d.text((12, 10), "LGTM", font=f, fill=GREEN + (255,))
-    d.text((16, 24), "\u2713", font=f, fill=GREEN + (255,))
+    d.rectangle([0, 0, TEX - 1, TEX - 1], outline=(60, 44, 24, 255), width=3)
+    for x in range(10, TEX - 8, 8):  # only raised bar stubs at the top remain
+        d.rectangle([x, 6, x + 3, 14], fill=(70, 62, 52, 255))
+    d.rectangle([6, 6, TEX - 7, 9], fill=(60, 54, 46, 255))
+    d.rectangle([10, 16, TEX - 11, TEX - 5], fill=(24, 30, 18, 255))  # the passage
+    d.rectangle([10, 16, TEX - 11, TEX - 5], outline=GREEN + (255,))
+    d.text((20, 30), "open", font=_font(11, bold=True), fill=GREEN + (255,))
     return img
 
 
@@ -151,78 +156,91 @@ def make_textures() -> dict[str, np.ndarray]:
 
 # ---------------------------------------------------------------- sprites (RGBA)
 
-def _bug(color) -> Image.Image:
-    img = _img(32, 32)
+def _imp(color) -> Image.Image:
+    """A frozen imp: horned blob with big white eyes. Must read as a creature
+    at any distance, so: fat black outline, huge eyes, horns."""
+    img = _img(48, 48)
     d = ImageDraw.Draw(img)
-    dark = tuple(int(c * 0.55) for c in color)
-    for i, xy in enumerate(((2, 8), (2, 14), (2, 20), (26, 8), (26, 14), (26, 20))):  # legs
-        d.line([xy, (xy[0] + (6 if xy[0] < 16 else -6), xy[1] + (3 if i % 2 else -3))], fill=dark, width=2)
-    d.ellipse([9, 9, 23, 23], fill=color)
-    d.ellipse([12, 12, 20, 20], fill=dark)
-    d.ellipse([11, 5, 14, 8], fill=color)  # head
-    d.line([12, 5, 9, 1], fill=color, width=1)  # antennae
-    d.line([13, 5, 16, 1], fill=color, width=1)
-    d.point((12, 6), fill=WHITE)
-    d.point((13, 6), fill=WHITE)
+    dark = tuple(int(c * 0.45) for c in color)
+    d.polygon([(11, 15), (6, 2), (18, 10)], fill=dark)  # horns
+    d.polygon([(37, 15), (42, 2), (30, 10)], fill=dark)
+    d.ellipse([6, 10, 42, 46], fill=(0, 0, 0))  # outline pass
+    d.ellipse([8, 12, 40, 44], fill=color)
+    d.ellipse([8, 12, 40, 44], outline=dark)
+    d.ellipse([13, 19, 23, 30], fill=WHITE, outline=(0, 0, 0))  # eyes
+    d.ellipse([25, 19, 35, 30], fill=WHITE, outline=(0, 0, 0))
+    d.ellipse([16, 23, 20, 27], fill=(0, 0, 0))
+    d.ellipse([28, 23, 32, 27], fill=(0, 0, 0))
+    d.line([(15, 37), (19, 35), (23, 37), (27, 35), (31, 37)], fill=(0, 0, 0), width=2)  # jagged grin
+    for ax, ay in ((4, 28), (44, 28)):  # stubby arms
+        d.ellipse([ax - 3, ay - 3, ax + 3, ay + 3], fill=color, outline=dark)
     return img
 
 
 def _key_badge() -> Image.Image:
-    img = _img(48, 48)
+    """The golden key. A key must look like a key: bow, shaft, teeth."""
+    img = _img(48, 56)
     d = ImageDraw.Draw(img)
-    d.rounded_rectangle([2, 8, 45, 40], 6, fill=(35, 134, 54), outline=GREEN, width=2)
-    f = _font(11, bold=True)
-    d.text((8, 14), "LGTM", font=f, fill=WHITE)
-    d.text((8, 26), "key", font=_font(10), fill=(180, 240, 190))
+    gold = (247, 197, 66)
+    gold_dark = (170, 120, 20)
+    d.ellipse([3, 2, 35, 34], outline=gold_dark, width=9)  # halo/glow ring
+    d.ellipse([6, 5, 30, 29], outline=gold, width=6)  # the bow
+    d.rectangle([16, 28, 24, 54], fill=gold)  # shaft
+    d.rectangle([16, 28, 24, 54], outline=gold_dark)
+    d.rectangle([24, 44, 36, 50], fill=gold, outline=gold_dark)  # teeth
+    d.rectangle([24, 33, 32, 38], fill=gold, outline=gold_dark)
     return img
 
 
 def _monolith(hp: int) -> Image.Image:
-    """The LEGACY MONOLITH. hp 4 = pristine, hp 1 = shattered."""
+    """THE DEBT: a jagged slab-titan. Big red eyes, a jagged glowing mouth and
+    a burning $ in its chest. Cracks grow as hp drops; it always grins."""
     rng = random.Random(100 + hp)
     img = _img(96, 128)
     d = ImageDraw.Draw(img)
-    slab = (31, 36, 41)
-    d.rounded_rectangle([14, 2, 81, 126], 5, fill=slab, outline=(56, 63, 71), width=2)
-    # moss of comments
-    for _ in range(26):
-        x, y = rng.randint(16, 78), rng.randint(4, 124)
-        d.point((x, y), fill=(48, 55, 62))
-        d.point((x + 1, y), fill=(40, 46, 52))
-    # red eyes: dark slits, no overhanging glyph art
-    eye = RED if hp > 1 else (120, 40, 36)
-    d.rounded_rectangle([30, 18, 40, 26], 3, fill=eye)
-    d.rounded_rectangle([56, 18, 66, 26], 3, fill=eye)
-    d.rectangle([34, 21, 36, 23], fill=BG)
-    d.rectangle([60, 21, 62, 23], fill=BG)
-    # the glowing core: 10k lines of legacy
+    slab = (26, 30, 35)
+    edge = (50, 58, 66)
+    top = [(12, 34), (20, 12), (29, 27), (38, 6), (47, 24), (57, 10), (66, 27), (76, 14), (83, 36)]
+    d.polygon(top + [(83, 126), (12, 126)], fill=slab, outline=edge)
+    for _ in range(30):  # moss of old unfinished things
+        x, y = rng.randint(15, 80), rng.randint(38, 122)
+        d.point((x, y), fill=(40, 47, 54))
+        d.point((x + 1, y), fill=(33, 39, 45))
+    # big glowing eyes with dark pupils
+    eye = RED if hp > 1 else (110, 36, 33)
+    d.rounded_rectangle([24, 42, 42, 58], 5, fill=eye, outline=(0, 0, 0))
+    d.rounded_rectangle([54, 42, 72, 58], 5, fill=eye, outline=(0, 0, 0))
+    d.rectangle([31, 46, 35, 54], fill=(10, 6, 6))
+    d.rectangle([61, 46, 65, 54], fill=(10, 6, 6))
+    # jagged glowing mouth
+    mouth = [(30, 68), (36, 72), (42, 66), (48, 72), (54, 66), (60, 72), (66, 68)]
+    d.line(mouth, fill=(200, 70, 50), width=3)
+    # the burning debt: a $ core
     core = max(hp - 1, 0)
-    glow = [(40, 20, 16), (120, 40, 30), (200, 60, 45), (248, 90, 60)][core]
-    d.rectangle([30, 44, 65, 102], fill=glow)
-    d.rectangle([30, 44, 65, 102], outline=(20, 10, 8), width=1)
-    f = _font(8, bold=True)
-    d.text((35, 58), "10k", font=f, fill=BG)
-    d.text((35, 70), "lines", font=f, fill=BG)
+    glow = [(110, 44, 34), (180, 60, 38), (235, 90, 52), (255, 130, 80)][core]
+    d.rectangle([30, 82, 65, 118], fill=(24, 12, 9))
+    d.rectangle([30, 82, 65, 118], outline=glow)
+    d.text((38, 84), "$", font=_font(36, bold=True), fill=glow)
     # cracks grow as hp drops
     for i in range(4 - hp):
-        x, y = rng.randint(20, 70), rng.randint(8, 110)
+        x, y = rng.randint(18, 74), rng.randint(36, 120)
         for _ in range(9):
             d.line([(x, y), (x + rng.randint(-6, 6), y + rng.randint(2, 8))], fill=(200, 210, 220), width=1)
             x += rng.randint(-6, 6)
             y += rng.randint(2, 8)
-    if hp == 1:  # about to fall apart
-        d.line([14, 40, 81, 70], fill=(200, 210, 220), width=2)
-        d.line([81, 30, 14, 90], fill=(160, 170, 180), width=1)
+    if hp == 1:
+        d.line([12, 40, 83, 74], fill=(200, 210, 220), width=2)
+        d.line([83, 30, 12, 96], fill=(160, 170, 180), width=1)
     return img
 
 
 def make_sprites() -> dict[str, Image.Image]:
     return {
-        "bug_red": _bug(RED),
-        "bug_amber": _bug(AMBER),
-        "bug_purple": _bug(PURPLE),
-        "bug_green": _bug(GREEN),
-        "bug_cyan": _bug(CYAN),
+        "bug_red": _imp(RED),
+        "bug_amber": _imp(AMBER),
+        "bug_purple": _imp(PURPLE),
+        "bug_green": _imp(GREEN),
+        "bug_cyan": _imp(CYAN),
         "key": _key_badge(),
         "boss": _monolith(4),
         "boss3": _monolith(3),
@@ -251,8 +269,8 @@ def make_title(w: int = 960, h: int = 600) -> Image.Image:
     f_menu = _font(30, bold=True)
     d.text((w // 2, 150), "DETACHED", font=f_big, fill=GREEN, anchor="mm")
     d.text((w // 2, 260), "HEAD", font=f_big, fill=GREEN, anchor="mm")
-    d.text((w // 2, 360), "$ git checkout --detach", font=f_sub, fill=GRAY, anchor="mm")
-    d.text((w // 2, 420), "a first-person shooter compiled into markdown", font=f_sub, fill=GRAY, anchor="mm")
+    d.text((w // 2, 360), "you fell asleep at your desk", font=f_sub, fill=GRAY, anchor="mm")
+    d.text((w // 2, 400), "and woke up inside the repository", font=f_sub, fill=GRAY, anchor="mm")
     d.text((w // 2, 500), "press START", font=f_menu, fill=WHITE, anchor="mm")
     return _scanlines(img)
 
@@ -260,13 +278,13 @@ def make_title(w: int = 960, h: int = 600) -> Image.Image:
 def make_win(w: int = 960, h: int = 600) -> Image.Image:
     img = _img(w, h, (6, 20, 10, 255))
     d = ImageDraw.Draw(img)
-    f_big = _font(90, bold=True)
+    f_big = _font(96, bold=True)
     f_sub = _font(26)
-    d.text((w // 2, 170), "DEPLOYED", font=f_big, fill=GREEN, anchor="mm")
-    d.text((w // 2, 280), "LEGACY MONOLITH DELETED", font=f_sub, fill=WHITE, anchor="mm")
-    for i, line in enumerate(("build    \u2713 passed", "tests   \u2713 1337 passed", "deploy  \u2713 shipped to prod")):
+    d.text((w // 2, 170), "YOU ESCAPED", font=f_big, fill=GREEN, anchor="mm")
+    d.text((w // 2, 280), "THE DEBT is deleted", font=f_sub, fill=WHITE, anchor="mm")
+    for i, line in enumerate(("build    \u2713 passed", "tests   \u2713 1337 passed", "deploy  \u2713 shipped")):
         d.text((w // 2, 370 + i * 36), line, font=_font(24), fill=GRAY, anchor="mm")
-    d.text((w // 2, 520), "merged. you may go home now.", font=f_sub, fill=GREEN, anchor="mm")
+    d.text((w // 2, 520), "you may go home now.", font=f_sub, fill=GREEN, anchor="mm")
     return _scanlines(img)
 
 
@@ -291,5 +309,5 @@ def make_minimap_banner(lvl, w: int = 960, h: int = 600) -> Image.Image:
                 d.rectangle([ox + x * cell, oy + y * cell, ox + x * cell + cell - 2, oy + y * cell + cell - 2], fill=(13, 17, 23), outline=(48, 54, 61))
     d.ellipse([ox + lvl.spawn[0] * cell + 4, oy + lvl.spawn[1] * cell + 4, ox + lvl.spawn[0] * cell + cell - 6, oy + lvl.spawn[1] * cell + cell - 6], fill=GREEN)
     d.text((w // 2, oy - 40), "repo-01 \u00b7 the repository", font=_font(30, bold=True), fill=GREEN, anchor="mm")
-    d.text((w // 2, h - 40), "find the LGTM key \u00b7 open the merge gate \u00b7 delete the LEGACY MONOLITH", font=_font(20), fill=GRAY, anchor="mm")
+    d.text((w // 2, h - 40), "find the key \u00b7 open the gate \u00b7 slay THE DEBT", font=_font(20), fill=GRAY, anchor="mm")
     return _scanlines(img)
